@@ -1,10 +1,19 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Copy, Sparkles, Eye } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Copy, Sparkles, Eye, Trophy, User } from 'lucide-react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
+import { insertWinnerSchema, type InsertWinner } from '@shared/schema';
 import { useToast } from '@/hooks/use-toast';
 
 interface SecretCodeRevealProps {
+  campaignId: string;
   secretCode: string;
   sponsorName: string;
   sponsorTagline: string;
@@ -12,6 +21,7 @@ interface SecretCodeRevealProps {
 }
 
 export default function SecretCodeReveal({ 
+  campaignId,
   secretCode, 
   sponsorName, 
   sponsorTagline,
@@ -19,7 +29,47 @@ export default function SecretCodeReveal({
 }: SecretCodeRevealProps) {
   const [isRevealed, setIsRevealed] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [showWinnerForm, setShowWinnerForm] = useState(false);
+  const [isWinner, setIsWinner] = useState(false);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Winner form setup
+  const form = useForm<InsertWinner>({
+    resolver: zodResolver(insertWinnerSchema),
+    defaultValues: {
+      campaignId,
+      winnerName: '',
+      winnerEmail: '',
+      winnerPhone: '',
+      codeUsed: secretCode,
+    },
+  });
+
+  // Submit winner mutation
+  const submitWinnerMutation = useMutation({
+    mutationFn: (winner: InsertWinner) => apiRequest('/api/winners', 'POST', winner),
+    onSuccess: () => {
+      setIsWinner(true);
+      setShowWinnerForm(false);
+      toast({
+        title: "🎉 Congratulations!",
+        description: "You're the winner! You'll be contacted soon about your prize.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/campaigns/active'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to submit winner information. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const onSubmitWinner = (data: InsertWinner) => {
+    submitWinnerMutation.mutate(data);
+  };
 
   const handleReveal = () => {
     console.log('Revealing secret code:', secretCode);
@@ -104,9 +154,22 @@ export default function SecretCodeReveal({
                 Copy Code
               </Button>
               
-              <p className="text-xs sm:text-sm text-muted-foreground">
-                Tell this code to VideoWalker first to win!
-              </p>
+              <div className="space-y-3">
+                <p className="text-xs sm:text-sm text-muted-foreground">
+                  Tell this code to VideoWalker first to win!
+                </p>
+                
+                {!showWinnerForm && !isWinner && (
+                  <Button 
+                    onClick={() => setShowWinnerForm(true)}
+                    className="w-full bg-gradient-to-r from-chart-1 to-chart-2 min-h-[44px]"
+                    data-testid="button-claim-prize"
+                  >
+                    <Trophy className="w-4 h-4 mr-2" />
+                    I Said the Code First - Claim Prize!
+                  </Button>
+                )}
+              </div>
             </div>
           )}
         </CardContent>
@@ -124,8 +187,108 @@ export default function SecretCodeReveal({
         </CardContent>
       </Card>
 
+      {/* Winner Form - Responsive */}
+      {showWinnerForm && !isWinner && (
+        <Card className="mb-4">
+          <CardContent className="p-4 sm:p-6">
+            <div className="text-center mb-4">
+              <Trophy className="w-8 h-8 mx-auto text-chart-1 mb-2" />
+              <h3 className="font-bold text-lg text-chart-1">Claim Your Prize!</h3>
+              <p className="text-sm text-muted-foreground">
+                Fill in your details to claim your prize
+              </p>
+            </div>
+            
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmitWinner)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="winnerName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Full Name *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter your full name" {...field} data-testid="input-winner-name" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="winnerEmail"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email (optional)</FormLabel>
+                      <FormControl>
+                        <Input type="email" placeholder="your.email@example.com" {...field} value={field.value || ''} data-testid="input-winner-email" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="winnerPhone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Phone (optional)</FormLabel>
+                      <FormControl>
+                        <Input type="tel" placeholder="+1234567890" {...field} value={field.value || ''} data-testid="input-winner-phone" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="flex gap-3 pt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowWinnerForm(false)}
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={submitWinnerMutation.isPending}
+                    className="flex-1 bg-gradient-to-r from-chart-1 to-chart-2"
+                    data-testid="button-submit-winner"
+                  >
+                    {submitWinnerMutation.isPending ? 'Submitting...' : 'Claim Prize'}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Winner Success Message */}
+      {isWinner && (
+        <Card className="mb-4 border-green-200 bg-green-50">
+          <CardContent className="p-4 sm:p-6 text-center">
+            <div className="w-12 h-12 mx-auto bg-green-500 rounded-full flex items-center justify-center mb-4">
+              <Trophy className="w-6 h-6 text-white" />
+            </div>
+            <h3 className="font-bold text-lg text-green-700 mb-2">🎉 Congratulations, Winner!</h3>
+            <p className="text-sm text-green-600 mb-4">
+              You've successfully claimed your prize! You'll be contacted soon with details about how to receive your reward.
+            </p>
+            <div className="bg-green-100 rounded-lg p-3">
+              <p className="text-xs text-green-700 font-medium">
+                Keep an eye on your email and phone for updates from the VideoWalker team!
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Mystery Description - Responsive */}
-      {mysteryDescription && (
+      {mysteryDescription && !isWinner && (
         <Card>
           <CardContent className="p-3 sm:p-4 text-center">
             <div className="w-8 h-8 sm:w-10 sm:h-10 mx-auto bg-gradient-to-br from-chart-1 to-chart-2 rounded-full flex items-center justify-center mb-2 sm:mb-3">

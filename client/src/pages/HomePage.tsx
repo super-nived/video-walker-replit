@@ -1,24 +1,41 @@
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ExternalLink, Play, Sparkles } from 'lucide-react';
+import { ExternalLink, Play, Sparkles, Clock, Settings } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { type Campaign } from '@shared/schema';
 import ThemeToggle from '@/components/ThemeToggle';
 import sponsorPoster from '@assets/generated_images/Tech_sponsor_ad_poster_de2247ee.png';
 
 export default function HomePage() {
   const [, setLocation] = useLocation();
   
-  // Mock data - todo: remove mock functionality
-  const mockAd = {
+  // Fetch active campaign
+  const { data: activeCampaign, isLoading } = useQuery<Campaign>({
+    queryKey: ['/api/campaigns/active'],
+    refetchInterval: 30000, // Refetch every 30 seconds for real-time updates
+  });
+
+  // Fallback data for when no campaign is active
+  const fallbackAd = {
     posterUrl: sponsorPoster,
     sponsorName: "TechFlow Pro",
     sponsorTagline: "Revolutionizing Digital Innovation",
-    sponsorWebsite: "https://example.com"
+    sponsorWebsite: "https://example.com",
+    mysteryDescription: "🎁 Mystery Prize Awaits! Be the first to tell VideoWalker this secret code and win an amazing surprise gift worth over $200!",
+    prizeValue: "$200+"
   };
 
+  const campaign = activeCampaign || fallbackAd;
+
   const handleSponsorClick = () => {
-    console.log('Sponsor website clicked:', mockAd.sponsorWebsite);
-    window.open(mockAd.sponsorWebsite, '_blank');
+    console.log('Sponsor website clicked:', campaign.sponsorWebsite);
+    window.open(campaign.sponsorWebsite, '_blank');
+  };
+
+  const handleAdminClick = () => {
+    console.log('Navigating to admin page');
+    setLocation('/admin');
   };
 
   const handleFindSecretCode = () => {
@@ -38,7 +55,16 @@ export default function HomePage() {
             Watch. Reveal. Win.
           </p>
         </div>
-        <div className="ml-2">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleAdminClick}
+            className="p-2 hover-elevate"
+            data-testid="button-admin"
+          >
+            <Settings className="w-4 h-4" />
+          </Button>
           <ThemeToggle />
         </div>
       </header>
@@ -51,21 +77,45 @@ export default function HomePage() {
           onClick={handleSponsorClick}
           data-testid="sponsor-poster-section"
         >
-          <img 
-            src={mockAd.posterUrl} 
-            alt={`${mockAd.sponsorName} advertisement`}
-            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-          />
+          {isLoading ? (
+            <div className="w-full h-full bg-muted animate-pulse flex items-center justify-center">
+              <p className="text-muted-foreground">Loading campaign...</p>
+            </div>
+          ) : (
+            <img 
+              src={campaign.posterUrl} 
+              alt={`${campaign.sponsorName} advertisement`}
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+            />
+          )}
           
           {/* Overlay with sponsor info - Responsive text and spacing */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent">
             <div className="absolute bottom-2 sm:bottom-4 md:bottom-6 left-2 sm:left-4 md:left-6 right-2 sm:right-4 md:right-6">
               <h2 className="text-white text-lg sm:text-xl md:text-2xl font-bold mb-1 sm:mb-2 line-clamp-2" data-testid="text-sponsor-name">
-                {mockAd.sponsorName}
+                {campaign.sponsorName}
               </h2>
               <p className="text-white/90 text-xs sm:text-sm mb-2 sm:mb-4 line-clamp-2" data-testid="text-sponsor-tagline">
-                {mockAd.sponsorTagline}
+                {campaign.sponsorTagline}
               </p>
+              
+              {/* Campaign status and countdown */}
+              {activeCampaign && (
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="flex items-center gap-1 bg-green-500/20 backdrop-blur-sm border border-green-500/30 text-green-100 px-2 py-1 rounded text-xs">
+                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                    <span>LIVE</span>
+                  </div>
+                  {activeCampaign.countdownEnd && new Date(activeCampaign.countdownEnd) > new Date() && (
+                    <div className="flex items-center gap-1 bg-orange-500/20 backdrop-blur-sm border border-orange-500/30 text-orange-100 px-2 py-1 rounded text-xs">
+                      <Clock className="w-3 h-3" />
+                      <span>
+                        {Math.floor((new Date(activeCampaign.countdownEnd).getTime() - new Date().getTime()) / (1000 * 60))}m left
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
               
               <Button
                 variant="outline"
@@ -97,8 +147,16 @@ export default function HomePage() {
                   <Sparkles className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-white" />
                 </div>
                 <h3 className="text-base sm:text-lg md:text-xl font-bold text-primary mb-1 sm:mb-2">
-                  🎁 Mystery Prize Awaits!
+                  {activeCampaign ? 
+                    `Win ${activeCampaign.prizeValue || 'an Amazing Prize'}!` : 
+                    '🎁 Mystery Prize Awaits!'
+                  }
                 </h3>
+                {activeCampaign && (
+                  <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2">
+                    {activeCampaign.mysteryDescription}
+                  </p>
+                )}
               </div>
 
               {/* Interactive Steps - Responsive spacing and text */}
@@ -127,11 +185,14 @@ export default function HomePage() {
 
               <Button 
                 onClick={handleFindSecretCode}
-                className="w-full bg-gradient-to-r from-primary to-chart-3 hover:from-primary/90 hover:to-chart-3/90 text-white font-semibold py-2 sm:py-3 text-sm sm:text-base min-h-[44px]"
+                disabled={!activeCampaign || (activeCampaign && !!activeCampaign.hasWinner)}
+                className="w-full bg-gradient-to-r from-primary to-chart-3 hover:from-primary/90 hover:to-chart-3/90 text-white font-semibold py-2 sm:py-3 text-sm sm:text-base min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
                 data-testid="button-find-secret-code"
               >
                 <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                Find Secret Code
+                {!activeCampaign ? 'No Active Campaign' :
+                 activeCampaign.hasWinner ? 'Winner Already Selected' :
+                 'Find Secret Code'}
               </Button>
             </CardContent>
           </Card>

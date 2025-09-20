@@ -4,9 +4,15 @@ import {
   type Campaign, 
   type InsertCampaign,
   type Winner,
-  type InsertWinner 
+  type InsertWinner,
+  users,
+  campaigns,
+  winners
 } from "@shared/schema";
 import { randomUUID } from "crypto";
+import { neon } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/neon-http";
+import { eq, and, desc } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
@@ -27,128 +33,146 @@ export interface IStorage {
   getCampaignWinner(campaignId: string): Promise<Winner | undefined>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<string, User>;
-  private campaigns: Map<string, Campaign>;
-  private winners: Map<string, Winner>;
+// Database-backed storage implementation
+export class DatabaseStorage implements IStorage {
+  private db;
 
   constructor() {
-    this.users = new Map();
-    this.campaigns = new Map();
-    this.winners = new Map();
-
-    // Initialize with sample campaign for development
+    const sql = neon(process.env.DATABASE_URL!);
+    this.db = drizzle(sql);
+    
+    // Initialize sample data for development
     this.initializeSampleData();
   }
 
   private async initializeSampleData() {
-    // Create a sample campaign that matches our current UI
-    const sampleCampaign: Campaign = {
-      id: randomUUID(),
-      sponsorName: "TechFlow Pro",
-      sponsorTagline: "Revolutionizing Digital Innovation",
-      sponsorWebsite: "https://example.com",
-      posterUrl: "/attached_assets/generated_images/Tech_sponsor_ad_poster_de2247ee.png",
-      secretCode: "TECH2024WIN",
-      mysteryDescription: "🎁 Mystery Prize Awaits! Be the first to tell VideoWalker this secret code and win an amazing surprise gift worth over $200!",
-      prizeValue: "$200+",
-      countdownEnd: new Date(Date.now() + 45 * 60 * 1000), // 45 minutes from now
-      isActive: true,
-      hasWinner: false,
-      createdAt: new Date(),
-    };
-    this.campaigns.set(sampleCampaign.id, sampleCampaign);
+    try {
+      // Check if we already have campaigns
+      const existingCampaigns = await this.db.select().from(campaigns).limit(1);
+      if (existingCampaigns.length > 0) {
+        return; // Sample data already exists
+      }
+
+      // Create a sample campaign that matches our current UI
+      await this.db.insert(campaigns).values({
+        sponsorName: "TechFlow Pro",
+        sponsorTagline: "Revolutionizing Digital Innovation",
+        sponsorWebsite: "https://example.com",
+        posterUrl: "/attached_assets/generated_images/Tech_sponsor_ad_poster_de2247ee.png",
+        secretCode: "TECH2024WIN",
+        mysteryDescription: "🎁 Mystery Prize Awaits! Be the first to tell VideoWalker this secret code and win an amazing surprise gift worth over $200!",
+        prizeValue: "$200+",
+        countdownEnd: new Date(Date.now() + 45 * 60 * 1000), // 45 minutes from now
+        isActive: true,
+        hasWinner: false,
+      });
+    } catch (error) {
+      console.log('Sample data initialization skipped (tables may not exist yet)');
+    }
   }
 
   // User methods
   async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
+    const result = await this.db.select().from(users).where(eq(users.id, id)).limit(1);
+    return result[0];
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+    const result = await this.db.select().from(users).where(eq(users.username, username)).limit(1);
+    return result[0];
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
-    return user;
+    const result = await this.db.insert(users).values(insertUser).returning();
+    return result[0];
   }
 
   // Campaign methods
   async getCampaigns(): Promise<Campaign[]> {
-    return Array.from(this.campaigns.values());
+    return await this.db.select().from(campaigns).orderBy(desc(campaigns.createdAt));
   }
 
   async getCampaign(id: string): Promise<Campaign | undefined> {
-    return this.campaigns.get(id);
+    const result = await this.db.select().from(campaigns).where(eq(campaigns.id, id)).limit(1);
+    return result[0];
   }
 
   async getActiveCampaign(): Promise<Campaign | undefined> {
-    const campaigns = Array.from(this.campaigns.values());
-    return campaigns.find(campaign => 
-      campaign.isActive && 
-      campaign.countdownEnd > new Date() && 
-      !campaign.hasWinner
-    );
+    const result = await this.db
+      .select()
+      .from(campaigns)
+      .where(
+        and(
+          eq(campaigns.isActive, true),
+          eq(campaigns.hasWinner, false)
+        )
+      )
+      .orderBy(desc(campaigns.createdAt))
+      .limit(1);
+    
+    // Filter by countdown end date in JavaScript since complex date comparisons might vary by SQL dialect
+    const campaign = result[0];
+    if (campaign && campaign.countdownEnd && campaign.countdownEnd > new Date()) {
+      return campaign;
+    }
+    return undefined;
   }
 
   async createCampaign(insertCampaign: InsertCampaign): Promise<Campaign> {
-    const id = randomUUID();
-    const campaign: Campaign = { 
-      ...insertCampaign, 
-      id, 
-      createdAt: new Date(),
+    const result = await this.db.insert(campaigns).values({
+      ...insertCampaign,
       isActive: true,
       hasWinner: false,
-      prizeValue: insertCampaign.prizeValue || null
-    };
-    this.campaigns.set(id, campaign);
-    return campaign;
+    }).returning();
+    return result[0];
   }
 
   async updateCampaign(id: string, updates: Partial<Campaign>): Promise<Campaign | undefined> {
-    const campaign = this.campaigns.get(id);
-    if (!campaign) return undefined;
-    
-    const updatedCampaign = { ...campaign, ...updates };
-    this.campaigns.set(id, updatedCampaign);
-    return updatedCampaign;
+    const result = await this.db
+      .update(campaigns)
+      .set(updates)
+      .where(eq(campaigns.id, id))
+      .returning();
+    return result[0];
   }
 
   // Winner methods
   async getWinners(campaignId?: string): Promise<Winner[]> {
-    const winners = Array.from(this.winners.values());
     if (campaignId) {
-      return winners.filter(winner => winner.campaignId === campaignId);
+      return await this.db
+        .select()
+        .from(winners)
+        .where(eq(winners.campaignId, campaignId))
+        .orderBy(desc(winners.wonAt));
     }
-    return winners;
+    return await this.db.select().from(winners).orderBy(desc(winners.wonAt));
   }
 
   async createWinner(insertWinner: InsertWinner): Promise<Winner> {
-    const id = randomUUID();
-    const winner: Winner = { 
-      ...insertWinner, 
-      id, 
-      wonAt: new Date(),
-      winnerEmail: insertWinner.winnerEmail || null,
-      winnerPhone: insertWinner.winnerPhone || null
-    };
-    this.winners.set(id, winner);
+    // Use a transaction to ensure atomicity - create winner and mark campaign as having winner
+    return await this.db.transaction(async (tx) => {
+      // Create the winner
+      const winnerResult = await tx.insert(winners).values(insertWinner).returning();
+      const winner = winnerResult[0];
 
-    // Mark campaign as having a winner
-    await this.updateCampaign(winner.campaignId, { hasWinner: true });
+      // Mark campaign as having a winner
+      await tx
+        .update(campaigns)
+        .set({ hasWinner: true })
+        .where(eq(campaigns.id, insertWinner.campaignId));
 
-    return winner;
+      return winner;
+    });
   }
 
   async getCampaignWinner(campaignId: string): Promise<Winner | undefined> {
-    const winners = Array.from(this.winners.values());
-    return winners.find(winner => winner.campaignId === campaignId);
+    const result = await this.db
+      .select()
+      .from(winners)
+      .where(eq(winners.campaignId, campaignId))
+      .limit(1);
+    return result[0];
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
