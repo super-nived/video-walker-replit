@@ -1,50 +1,60 @@
-import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import { QueryClient, QueryKey } from "@tanstack/react-query";
+import { getFirestore, collection, getDocs, query, where, doc, getDoc } from "firebase/firestore";
+import app from "./firebase"; // Assuming 'app' is exported from firebase.ts
 
-async function throwIfResNotOk(res: Response) {
-  if (!res.ok) {
-    const text = (await res.text()) || res.statusText;
-    throw new Error(`${res.status}: ${text}`);
+const firestore = getFirestore(app);
+
+const firebaseQueryFn = async ({ queryKey }: { queryKey: QueryKey }) => {
+  const [collectionName, id] = queryKey;
+
+  if (typeof collectionName !== 'string') {
+    throw new Error("Collection name must be a string.");
   }
-}
 
-export async function apiRequest(
-  method: string,
-  url: string,
-  data?: unknown | undefined,
-): Promise<Response> {
-  const res = await fetch(url, {
-    method,
-    headers: data ? { "Content-Type": "application/json" } : {},
-    body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
-  });
+  const collectionRef = collection(firestore, collectionName);
 
-  await throwIfResNotOk(res);
-  return res;
-}
-
-type UnauthorizedBehavior = "returnNull" | "throw";
-export const getQueryFn: <T>(options: {
-  on401: UnauthorizedBehavior;
-}) => QueryFunction<T> =
-  ({ on401: unauthorizedBehavior }) =>
-  async ({ queryKey }) => {
-    const res = await fetch(queryKey.join("/") as string, {
-      credentials: "include",
-    });
-
-    if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-      return null;
+  if (id === 'active' && collectionName === 'campaigns') {
+    // Special handling for active campaign
+    const q = query(collectionRef, where('isActive', '==', true));
+    const querySnapshot = await getDocs(q);
+    if (!querySnapshot.empty) {
+      const activeDoc = querySnapshot.docs[0];
+      const data = activeDoc.data();
+      if (data.countdownEnd && typeof data.countdownEnd.toDate === 'function') {
+        data.countdownEnd = data.countdownEnd.toDate();
+      }
+      return { id: activeDoc.id, ...data };
     }
-
-    await throwIfResNotOk(res);
-    return await res.json();
-  };
+    return null; // No active campaign found
+  } else if (id) {
+    // Fetch a single document by ID
+    const docRef = doc(firestore, collectionName, id as string);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      if (data.countdownEnd && typeof data.countdownEnd.toDate === 'function') {
+        data.countdownEnd = data.countdownEnd.toDate();
+      }
+      return { id: docSnap.id, ...data };
+    }
+    return null;
+  } else {
+    // Fetch all documents in the collection
+    const querySnapshot = await getDocs(collectionRef);
+    return querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      if (data.countdownEnd && typeof data.countdownEnd.toDate === 'function') {
+        data.countdownEnd = data.countdownEnd.toDate();
+      }
+      return { id: doc.id, ...data };
+    });
+  }
+};
 
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      queryFn: getQueryFn({ on401: "throw" }),
+      queryFn: firebaseQueryFn,
       refetchInterval: false,
       refetchOnWindowFocus: false,
       staleTime: Infinity,

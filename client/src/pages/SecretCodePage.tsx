@@ -16,7 +16,7 @@ export default function SecretCodePage() {
 
   // Fetch active campaign
   const { data: activeCampaign, isLoading } = useQuery<Campaign>({
-    queryKey: ['/api/campaigns/active'],
+    queryKey: ['campaigns', 'active'], // Assuming 'active' is the document ID for the active campaign
     refetchInterval: 10000, // Refetch every 10 seconds for real-time updates
   });
 

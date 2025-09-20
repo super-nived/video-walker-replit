@@ -9,11 +9,39 @@ import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { insertCampaignSchema, type InsertCampaign, type Campaign } from '@shared/schema';
+import { type InsertCampaign, type Campaign } from '@shared/schema';
+import { z } from "zod";
+
+interface CampaignWithDate extends Campaign {
+  countdownEnd: Date;
+  createdAt: Date;
+}
+
+const campaignFormSchema = z.object({
+  sponsorName: z.string().min(1, "Sponsor name is required"),
+  sponsorTagline: z.string().min(1, "Sponsor tagline is required"),
+  sponsorWebsite: z.string().url("Invalid URL").min(1, "Sponsor website is required"),
+  posterUrl: z.string().url("Invalid URL").min(1, "Poster URL is required"),
+  secretCode: z.string().min(1, "Secret code is required"),
+  mysteryDescription: z.string().min(1, "Mystery description is required"),
+  prizeValue: z.string().optional(),
+  countdownEnd: z.date(),
+  isActive: z.boolean().optional(),
+  hasWinner: z.boolean().optional(),
+});
+
 import { useToast } from '@/hooks/use-toast';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';
+import { collection, addDoc } from "firebase/firestore";
+import { firestore } from '@/lib/firebase';
 import ThemeToggle from '@/components/ThemeToggle';
+
+const formatDate = (date: Date | undefined | null) => {
+  if (date instanceof Date) {
+    return date.toLocaleDateString();
+  }
+  return 'N/A';
+};
 
 export default function AdminPage() {
   const [, setLocation] = useLocation();
@@ -41,7 +69,7 @@ export default function AdminPage() {
 
   // Campaign form setup
   const form = useForm<InsertCampaign>({
-    resolver: zodResolver(insertCampaignSchema),
+    resolver: zodResolver(campaignFormSchema),
     defaultValues: {
       sponsorName: '',
       sponsorTagline: '',
@@ -57,20 +85,23 @@ export default function AdminPage() {
   });
 
   // Fetch campaigns
-  const { data: campaigns = [], isLoading: campaignsLoading } = useQuery<Campaign[]>({
-    queryKey: ['/api/campaigns'],
+  const { data: campaigns = [], isLoading: campaignsLoading } = useQuery<CampaignWithDate[]>({
+    queryKey: ['campaigns'],
     enabled: isLoggedIn,
   });
 
   // Create campaign mutation
   const createCampaignMutation = useMutation({
-    mutationFn: (campaign: InsertCampaign) => apiRequest('/api/campaigns', 'POST', campaign),
+    mutationFn: async (campaign: InsertCampaign) => {
+      const docRef = await addDoc(collection(firestore, 'campaigns'), campaign);
+      return { id: docRef.id, ...campaign }; // Return the created campaign with its ID
+    },
     onSuccess: () => {
       toast({
         title: "Campaign Created!",
         description: "Your new campaign has been created successfully.",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/campaigns'] });
+      queryClient.invalidateQueries({ queryKey: ['campaigns'] });
       setActiveView('manage-campaigns');
       form.reset();
     },
@@ -428,7 +459,7 @@ export default function AdminPage() {
                               type="datetime-local"
                               {...field}
                               value={field.value instanceof Date ? field.value.toISOString().slice(0, 16) : ''}
-                              onChange={(e) => field.onChange(e.target.value ? new Date(e.target.value) : null)}
+                              onChange={(e) => field.onChange(e.target.value ? new Date(e.target.value) : undefined)}
                               data-testid="input-countdown-end"
                             />
                           </FormControl>
@@ -517,7 +548,7 @@ export default function AdminPage() {
                             </div>
                             <div>
                               <span className="font-medium">Ends:</span>
-                              <p>{new Date(campaign.countdownEnd).toLocaleDateString()}</p>
+                              <p>{formatDate(campaign.countdownEnd)}</p>
                             </div>
                             <div>
                               <span className="font-medium">Created:</span>

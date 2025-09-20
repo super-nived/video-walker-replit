@@ -8,8 +8,19 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Copy, Sparkles, Eye, Trophy, User } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';
-import { insertWinnerSchema, type InsertWinner } from '@shared/schema';
+import { collection, addDoc } from "firebase/firestore";
+import { firestore } from '@/lib/firebase';
+import { type InsertWinner } from '@shared/schema';
+import { z } from "zod";
+
+const winnerFormSchema = z.object({
+  campaignId: z.string(),
+  winnerName: z.string().min(1, "Winner name is required"),
+  winnerEmail: z.string().email("Invalid email address").nullable().optional(),
+  winnerPhone: z.string().nullable().optional(),
+  codeUsed: z.string(),
+});
+
 import { useToast } from '@/hooks/use-toast';
 
 interface SecretCodeRevealProps {
@@ -36,7 +47,7 @@ export default function SecretCodeReveal({
 
   // Winner form setup
   const form = useForm<InsertWinner>({
-    resolver: zodResolver(insertWinnerSchema),
+    resolver: zodResolver(winnerFormSchema),
     defaultValues: {
       campaignId,
       winnerName: '',
@@ -48,7 +59,10 @@ export default function SecretCodeReveal({
 
   // Submit winner mutation
   const submitWinnerMutation = useMutation({
-    mutationFn: (winner: InsertWinner) => apiRequest('/api/winners', 'POST', winner),
+    mutationFn: async (winner: InsertWinner) => {
+      const docRef = await addDoc(collection(firestore, 'winners'), winner);
+      return { id: docRef.id, ...winner }; // Return the created winner with its ID
+    },
     onSuccess: () => {
       setIsWinner(true);
       setShowWinnerForm(false);
@@ -56,7 +70,7 @@ export default function SecretCodeReveal({
         title: "🎉 Congratulations!",
         description: "You're the winner! You'll be contacted soon about your prize.",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/campaigns/active'] });
+      queryClient.invalidateQueries({ queryKey: ['campaigns', 'active'] });
     },
     onError: (error: any) => {
       toast({

@@ -12,7 +12,7 @@ export default function HomePage() {
   
   // Fetch active campaign
   const { data: activeCampaign, isLoading } = useQuery<Campaign>({
-    queryKey: ['/api/campaigns/active'],
+    queryKey: ['campaigns', 'active'], // Assuming 'active' is the document ID for the active campaign
     refetchInterval: 30000, // Refetch every 30 seconds for real-time updates
   });
 
