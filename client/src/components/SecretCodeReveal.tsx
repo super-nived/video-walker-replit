@@ -8,12 +8,14 @@ interface SecretCodeRevealProps {
   secretCode: string;
   sponsorName: string;
   sponsorTagline: string;
+  mysteryDescription?: string;
 }
 
 export default function SecretCodeReveal({ 
   secretCode, 
   sponsorName, 
-  sponsorTagline 
+  sponsorTagline,
+  mysteryDescription 
 }: SecretCodeRevealProps) {
   const [isRevealed, setIsRevealed] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
