@@ -16,13 +16,14 @@ export default function SecretCodePage() {
   const mockData = {
     secretCode: "TECH2024WIN",
     sponsorName: "TechFlow Pro",
-    sponsorTagline: "Revolutionizing Digital Innovation"
+    sponsorTagline: "Revolutionizing Digital Innovation",
+    mysteryDescription: "🎁 Mystery Prize Awaits! Be the first to tell VideoWalker this secret code and win an amazing surprise gift worth over $200!"
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="flex items-center justify-between p-4 border-b">
+    <div className="h-screen w-screen bg-background overflow-hidden">
+      {/* Floating Header */}
+      <header className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between p-4 bg-background/80 backdrop-blur-sm border-b">
         <Button 
           variant="ghost" 
           onClick={handleBackClick}
@@ -30,53 +31,26 @@ export default function SecretCodePage() {
           data-testid="button-back-home"
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to Home
+          Back
         </Button>
         
         <div className="text-center">
-          <h1 className="text-xl font-bold text-primary">
-            Secret Code
+          <h1 className="text-lg font-bold text-primary">
+            Secret Code Revealed
           </h1>
         </div>
         
         <ThemeToggle />
       </header>
 
-      {/* Main Content */}
-      <main className="flex flex-col lg:flex-row min-h-[calc(100vh-80px)]">
-        {/* Secret Code Section - 70% */}
-        <section className="flex-1 lg:flex-[7] flex items-center justify-center p-4">
-          <SecretCodeReveal
-            secretCode={mockData.secretCode}
-            sponsorName={mockData.sponsorName}
-            sponsorTagline={mockData.sponsorTagline}
-          />
-        </section>
-
-        {/* Sponsor Details - 30% */}
-        <section className="lg:flex-[3] p-4 bg-muted/20 flex items-center justify-center">
-          <div className="text-center space-y-4 max-w-sm">
-            <div className="w-20 h-20 mx-auto bg-primary/10 rounded-full flex items-center justify-center">
-              <span className="text-2xl font-bold text-primary">
-                {mockData.sponsorName.charAt(0)}
-              </span>
-            </div>
-            
-            <div>
-              <h3 className="font-bold text-lg mb-2" data-testid="text-sponsor-details-name">
-                {mockData.sponsorName}
-              </h3>
-              <p className="text-sm text-muted-foreground" data-testid="text-sponsor-details-tagline">
-                {mockData.sponsorTagline}
-              </p>
-            </div>
-            
-            <div className="text-xs text-muted-foreground pt-4 border-t">
-              <p>Tell this code to VideoWalker</p>
-              <p>to claim your prize!</p>
-            </div>
-          </div>
-        </section>
+      {/* Full Screen Main Content */}
+      <main className="h-full w-full pt-20 flex items-center justify-center">
+        <SecretCodeReveal
+          secretCode={mockData.secretCode}
+          sponsorName={mockData.sponsorName}
+          sponsorTagline={mockData.sponsorTagline}
+          mysteryDescription={mockData.mysteryDescription}
+        />
       </main>
     </div>
   );
