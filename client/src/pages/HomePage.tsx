@@ -44,9 +44,9 @@ export default function HomePage() {
   };
 
   return (
-    <div className="h-screen w-screen bg-background overflow-hidden">
+    <div className="w-screen bg-background overflow-y-auto">
       {/* Floating Header - Responsive sizing */}
-      <header className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between p-2 sm:p-4 bg-background/80 backdrop-blur-sm">
+      <header className="fixed top-0 left-0 right-0 z-10 flex items-center justify-between p-2 sm:p-4 bg-background/80 backdrop-blur-sm">
         <div className="min-w-0 flex-1">
           <h1 className="text-lg sm:text-xl font-bold text-primary truncate" data-testid="text-app-title">
             VideoWalker
@@ -69,11 +69,11 @@ export default function HomePage() {
         </div>
       </header>
 
-      {/* Full Screen Layout */}
-      <main className="h-full w-full flex flex-col">
+      {/* Full Screen Layout with scrolling */}
+      <main className="h-full w-full flex flex-col pt-[60px] sm:pt-[72px] mb-[10rem]">
         {/* Top 70% - Sponsor Poster - Responsive adjustments */}
         <section 
-          className="h-[70%] w-full relative cursor-pointer group overflow-hidden"
+          className="h-[70svh] w-full relative cursor-pointer group overflow-hidden"
           onClick={handleSponsorClick}
           data-testid="sponsor-poster-section"
         >
@@ -139,8 +139,8 @@ export default function HomePage() {
         </section>
 
         {/* Bottom 30% - Mystery Gift Instructions - Super responsive */}
-        <section className="h-[30%] w-full bg-gradient-to-br from-primary/5 to-chart-3/5 flex items-center justify-center p-2 sm:p-4 md:p-6">
-          <Card className="w-full max-w-xs sm:max-w-sm md:max-w-md border-2 border-primary/20 bg-background/80 backdrop-blur-sm hover-elevate">
+        <section className="flex-grow w-full bg-gradient-to-br from-primary/5 to-chart-3/5 flex items-center justify-center p-2 sm:p-4 md:p-6">
+          <Card className="w-full border-2 border-primary/20 bg-background/80 backdrop-blur-sm hover-elevate">
             <CardContent className="p-3 sm:p-4 md:p-6 text-center">
               <div className="mb-3 sm:mb-4 md:mb-6">
                 <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 mx-auto bg-gradient-to-br from-primary to-chart-3 rounded-full flex items-center justify-center mb-2 sm:mb-3 md:mb-4">
