@@ -266,6 +266,32 @@
     overflow: hidden;
   }
 
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Extra small screens utility (below sm) */
+  @media (max-width: 399px) {
+    .xs\:block {
+      display: block;
+    }
+    .xs\:hidden {
+      display: none;
+    }
+    .xs\:inline {
+      display: inline;
+    }
+  }
+
+  /* Minimum touch targets for accessibility */
+  .min-touch {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
   /* Placeholder styling for contentEditable div */
   [contenteditable][data-placeholder]:empty::before {
     content: attr(data-placeholder);

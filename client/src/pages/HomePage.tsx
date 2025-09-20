@@ -28,22 +28,24 @@ export default function HomePage() {
 
   return (
     <div className="h-screen w-screen bg-background overflow-hidden">
-      {/* Floating Header */}
-      <header className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between p-4 bg-background/80 backdrop-blur-sm">
-        <div>
-          <h1 className="text-xl font-bold text-primary" data-testid="text-app-title">
+      {/* Floating Header - Responsive sizing */}
+      <header className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between p-2 sm:p-4 bg-background/80 backdrop-blur-sm">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-lg sm:text-xl font-bold text-primary truncate" data-testid="text-app-title">
             VideoWalker
           </h1>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-muted-foreground hidden xs:block">
             Watch. Reveal. Win.
           </p>
         </div>
-        <ThemeToggle />
+        <div className="ml-2">
+          <ThemeToggle />
+        </div>
       </header>
 
       {/* Full Screen Layout */}
       <main className="h-full w-full flex flex-col">
-        {/* Top 70% - Sponsor Poster */}
+        {/* Top 70% - Sponsor Poster - Responsive adjustments */}
         <section 
           className="h-[70%] w-full relative cursor-pointer group overflow-hidden"
           onClick={handleSponsorClick}
@@ -55,78 +57,80 @@ export default function HomePage() {
             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
           
-          {/* Overlay with sponsor info */}
+          {/* Overlay with sponsor info - Responsive text and spacing */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent">
-            <div className="absolute bottom-6 left-6 right-6">
-              <h2 className="text-white text-2xl font-bold mb-2" data-testid="text-sponsor-name">
+            <div className="absolute bottom-2 sm:bottom-4 md:bottom-6 left-2 sm:left-4 md:left-6 right-2 sm:right-4 md:right-6">
+              <h2 className="text-white text-lg sm:text-xl md:text-2xl font-bold mb-1 sm:mb-2 line-clamp-2" data-testid="text-sponsor-name">
                 {mockAd.sponsorName}
               </h2>
-              <p className="text-white/90 text-sm mb-4" data-testid="text-sponsor-tagline">
+              <p className="text-white/90 text-xs sm:text-sm mb-2 sm:mb-4 line-clamp-2" data-testid="text-sponsor-tagline">
                 {mockAd.sponsorTagline}
               </p>
               
               <Button
                 variant="outline"
-                className="bg-white/10 backdrop-blur-sm border-white/30 text-white hover:bg-white/20 transition-all duration-300"
+                size="sm"
+                className="bg-white/10 backdrop-blur-sm border-white/30 text-white hover:bg-white/20 transition-all duration-300 text-xs sm:text-sm min-h-[44px]"
                 data-testid="button-sponsor-website"
               >
-                <ExternalLink className="w-4 h-4 mr-2" />
-                Visit Website
+                <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                <span className="hidden xs:inline">Visit Website</span>
+                <span className="xs:hidden">Visit</span>
               </Button>
             </div>
           </div>
 
-          {/* Hover Play Icon */}
+          {/* Hover Play Icon - Responsive sizing */}
           <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-            <div className="w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-              <Play className="w-8 h-8 text-white ml-1" fill="currentColor" />
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
+              <Play className="w-6 h-6 sm:w-8 sm:h-8 text-white ml-1" fill="currentColor" />
             </div>
           </div>
         </section>
 
-        {/* Bottom 30% - Mystery Gift Instructions */}
-        <section className="h-[30%] w-full bg-gradient-to-br from-primary/5 to-chart-3/5 flex items-center justify-center p-6">
-          <Card className="w-full max-w-md border-2 border-primary/20 bg-background/80 backdrop-blur-sm hover-elevate">
-            <CardContent className="p-6 text-center">
-              <div className="mb-6">
-                <div className="w-16 h-16 mx-auto bg-gradient-to-br from-primary to-chart-3 rounded-full flex items-center justify-center mb-4">
-                  <Sparkles className="w-8 h-8 text-white" />
+        {/* Bottom 30% - Mystery Gift Instructions - Super responsive */}
+        <section className="h-[30%] w-full bg-gradient-to-br from-primary/5 to-chart-3/5 flex items-center justify-center p-2 sm:p-4 md:p-6">
+          <Card className="w-full max-w-xs sm:max-w-sm md:max-w-md border-2 border-primary/20 bg-background/80 backdrop-blur-sm hover-elevate">
+            <CardContent className="p-3 sm:p-4 md:p-6 text-center">
+              <div className="mb-3 sm:mb-4 md:mb-6">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 mx-auto bg-gradient-to-br from-primary to-chart-3 rounded-full flex items-center justify-center mb-2 sm:mb-3 md:mb-4">
+                  <Sparkles className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-white" />
                 </div>
-                <h3 className="text-xl font-bold text-primary mb-2">
+                <h3 className="text-base sm:text-lg md:text-xl font-bold text-primary mb-1 sm:mb-2">
                   🎁 Mystery Prize Awaits!
                 </h3>
               </div>
 
-              {/* Interactive Steps */}
-              <div className="space-y-4 mb-6">
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/5 hover:bg-primary/10 transition-colors">
-                  <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                    <span className="text-sm font-bold">🔑</span>
+              {/* Interactive Steps - Responsive spacing and text */}
+              <div className="space-y-2 sm:space-y-3 md:space-y-4 mb-3 sm:mb-4 md:mb-6">
+                <div className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg bg-primary/5 hover:bg-primary/10 transition-colors min-h-[44px]">
+                  <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                    <span className="text-xs sm:text-sm font-bold">🔑</span>
                   </div>
-                  <span className="text-sm font-medium">Find the secret code</span>
+                  <span className="text-xs sm:text-sm font-medium">Find the secret code</span>
                 </div>
 
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-chart-2/5 hover:bg-chart-2/10 transition-colors">
-                  <div className="w-8 h-8 rounded-full bg-chart-2/20 flex items-center justify-center">
-                    <span className="text-sm font-bold">🎤</span>
+                <div className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg bg-chart-2/5 hover:bg-chart-2/10 transition-colors min-h-[44px]">
+                  <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-chart-2/20 flex items-center justify-center flex-shrink-0">
+                    <span className="text-xs sm:text-sm font-bold">🎤</span>
                   </div>
-                  <span className="text-sm font-medium">Say it to VideoWalker</span>
+                  <span className="text-xs sm:text-sm font-medium">Say it to VideoWalker</span>
                 </div>
 
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-chart-1/5 hover:bg-chart-1/10 transition-colors">
-                  <div className="w-8 h-8 rounded-full bg-chart-1/20 flex items-center justify-center">
-                    <span className="text-sm font-bold">🎁</span>
+                <div className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg bg-chart-1/5 hover:bg-chart-1/10 transition-colors min-h-[44px]">
+                  <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-chart-1/20 flex items-center justify-center flex-shrink-0">
+                    <span className="text-xs sm:text-sm font-bold">🎁</span>
                   </div>
-                  <span className="text-sm font-medium">Get the gift</span>
+                  <span className="text-xs sm:text-sm font-medium">Get the gift</span>
                 </div>
               </div>
 
               <Button 
                 onClick={handleFindSecretCode}
-                className="w-full bg-gradient-to-r from-primary to-chart-3 hover:from-primary/90 hover:to-chart-3/90 text-white font-semibold py-3"
+                className="w-full bg-gradient-to-r from-primary to-chart-3 hover:from-primary/90 hover:to-chart-3/90 text-white font-semibold py-2 sm:py-3 text-sm sm:text-base min-h-[44px]"
                 data-testid="button-find-secret-code"
               >
-                <Sparkles className="w-4 h-4 mr-2" />
+                <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                 Find Secret Code
               </Button>
             </CardContent>

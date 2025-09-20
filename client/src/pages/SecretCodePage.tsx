@@ -22,35 +22,41 @@ export default function SecretCodePage() {
 
   return (
     <div className="h-screen w-screen bg-background overflow-hidden">
-      {/* Floating Header */}
-      <header className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between p-4 bg-background/80 backdrop-blur-sm border-b">
+      {/* Floating Header - Super responsive */}
+      <header className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between p-2 sm:p-4 bg-background/80 backdrop-blur-sm border-b">
         <Button 
           variant="ghost" 
+          size="sm"
           onClick={handleBackClick}
-          className="flex items-center gap-2"
+          className="flex items-center gap-1 sm:gap-2 min-h-[44px] text-xs sm:text-sm"
           data-testid="button-back-home"
         >
-          <ArrowLeft className="w-4 h-4" />
-          Back
+          <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4" />
+          <span className="hidden xs:inline">Back</span>
+          <span className="xs:hidden">←</span>
         </Button>
         
-        <div className="text-center">
-          <h1 className="text-lg font-bold text-primary">
+        <div className="text-center min-w-0 flex-1 mx-2 sm:mx-4">
+          <h1 className="text-sm sm:text-lg font-bold text-primary truncate">
             Secret Code Revealed
           </h1>
         </div>
         
-        <ThemeToggle />
+        <div className="flex-shrink-0">
+          <ThemeToggle />
+        </div>
       </header>
 
-      {/* Full Screen Main Content */}
-      <main className="h-full w-full pt-20 flex items-center justify-center">
-        <SecretCodeReveal
-          secretCode={mockData.secretCode}
-          sponsorName={mockData.sponsorName}
-          sponsorTagline={mockData.sponsorTagline}
-          mysteryDescription={mockData.mysteryDescription}
-        />
+      {/* Full Screen Main Content - Super responsive padding */}
+      <main className="h-full w-full pt-16 sm:pt-20 flex items-center justify-center p-2 sm:p-4">
+        <div className="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg">
+          <SecretCodeReveal
+            secretCode={mockData.secretCode}
+            sponsorName={mockData.sponsorName}
+            sponsorTagline={mockData.sponsorTagline}
+            mysteryDescription={mockData.mysteryDescription}
+          />
+        </div>
       </main>
     </div>
   );
