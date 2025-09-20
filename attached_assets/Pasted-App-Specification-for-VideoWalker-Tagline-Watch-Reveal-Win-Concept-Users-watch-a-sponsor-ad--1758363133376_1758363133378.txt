@@ -1,0 +1,213 @@
+App Specification for VideoWalker
+
+Tagline: “Watch. Reveal. Win.”
+Concept:
+Users watch a sponsor ad → A secret code is revealed → Whoever tells the code to VideoWalker first wins the gift → After a winner is set, the code event ends and the winner’s image replaces the code.
+
+🌍 Pages & Flows
+1. Homepage (Public, mobile-first)
+
+Responsive Layout (Mobile priority):
+
+Top 70% → Sponsor Ad (poster, full-width on mobile).
+
+Bottom 30% → Gift section.
+
+Gift Section:
+
+Gift image/title + short description.
+
+If countdown still running → Show timer: “Secret code reveals in 02:35”.
+
+If countdown expired & no winner yet → Show “Reveal Secret Code” button.
+
+If winner is already declared → Show Winner Image + Winner Message instead of code button.
+
+Sponsor Ad Section (dynamic):
+
+Poster of sponsor.
+
+Sponsor name & tagline.
+
+Clickable sponsor website link.
+
+User Actions:
+
+Click “Reveal Secret Code” → Goes to Secret Code Page (if no winner yet).
+
+If winner already exists → No navigation, instead shows winner card inline.
+
+2. Secret Code Page (Public, mobile-first)
+
+Layout (Mobile):
+
+Top 70% → Secret Code Reveal with animation (sparkle/glitch/fade in) + sound.
+
+Bottom 30% → Sponsor details (logo, name, tagline).
+
+Flow:
+
+If countdown expired & no winner yet → Reveal secret code with animation.
+
+If countdown not yet expired → Only show countdown timer.
+
+If winner already set → Skip reveal → Show winner’s image and winner’s name.
+
+Extras:
+
+“Copy Code” button (optional).
+
+Smooth sound + animation to make it engaging.
+
+3. Admin Panel (Private – Google Auth)
+
+Admin Features:
+
+Login with Google.
+
+Add/Edit Advertisement:
+
+Upload sponsor poster/(Firebase Storage).
+
+Enter company details (name, tagline, website).
+
+Upload gift image.
+
+Enter secret code.
+
+Set countdown timer (start & end).
+
+Set Active Advertisement:
+
+Only one ad live at a time.
+
+Winner Management:
+
+Upload winner’s image.
+
+Mark ad as “Won” → Secret Code replaced by Winner Image on all public pages.
+
+Admin Views:
+
+Ad List: All past & present ads.
+
+Winner Status: Quick view showing whether a winner is set for each ad.
+
+4. Winners Page (Public)
+
+Purpose: To show history of past ads + winners.
+
+Layout (Grid-based, mobile responsive):
+
+Cards (like product cards).
+
+Card contents:
+
+Winner image (big, focus point).
+
+Sponsor title/logo.
+
+Gift name/short description.
+
+Countdown status → "Event Over".
+
+Action:
+
+Clicking on a Winner Card opens sponsor details page (optional) OR redirects to sponsor’s website.
+
+📱 Mobile Responsiveness
+
+Mobile-first: All pages are designed with a vertical scroll layout.
+
+Homepage (mobile):
+
+Ad takes full width top.
+
+Gift section below it.
+
+Secret Code Page (mobile):
+
+Code reveal animation centered, sponsor details stacked below.
+
+Winners Page (mobile):
+
+Winner cards arranged in a 2-column grid (or 1-column for small screens).
+
+Tablet/Desktop: Split layout → 70/30 side-by-side (as in original spec).
+
+⚡ Functionality Flow
+
+Admin uploads ad + gift + secret code + timer → Sets active.
+
+Homepage shows ad + countdown.
+
+When countdown ends → “Reveal Secret Code” button active.
+
+First user who tells secret code to VideoWalker (outside app) → Admin manually sets winner image.
+
+Once winner is set → Secret Code disappears → Winner Image shown instead (homepage + code page).
+
+Winners Page updates → Displays winner card for history.
+
+🔧 Tech Stack
+
+Frontend: React.js + TailwindCSS (mobile-first UI).
+
+
+Backend: Firebase (Firestore + Storage + Authentication).
+
+
+
+🏆 Summary of Pages
+
+Homepage: Ad (70%) + Gift/Code Section (30%).
+
+Secret Code Page: Secret Code animation OR Winner Image.
+
+Admin Panel: Manage ads, set active ad, declare winner.
+
+Winners Page: Grid of past winners + sponsor details.
+
+firebase details = [ 
+import firebase from 'firebase/app';
+import 'firebase/auth'; // Import Firebase Auth
+import 'firebase/firestore';  // Import Firestore
+import 'firebase/storage'; // Import Firebase Storage
+
+const firebaseConfig = {
+    apiKey: "AIzaSyAPKcXgBJLbmngYHfOymjkV-d3t1NmhRoU",
+    authDomain: "portfolio-5e3eb.firebaseapp.com",
+    projectId: "portfolio-5e3eb",
+    storageBucket: "portfolio-5e3eb.appspot.com",
+    messagingSenderId: "511561733367",
+    appId: "1:511561733367:web:6de02fa9d4201c67e02ff2"
+  };
+  
+
+firebase.initializeApp(firebaseConfig);
+const Firebase = firebase
+const firestore = firebase.firestore(); // Initialize Firestore
+const storage = firebase.storage()
+export { Firebase, firestore, storage };
+
+import firebase from 'firebase/app';
+import 'firebase/auth'; // Import Firebase Auth
+import 'firebase/firestore';  // Import Firestore
+import 'firebase/storage'; // Import Firebase Storage
+
+const firebaseConfig = {
+    apiKey: "AIzaSyAPKcXgBJLbmngYHfOymjkV-d3t1NmhRoU",
+    authDomain: "portfolio-5e3eb.firebaseapp.com",
+    projectId: "portfolio-5e3eb",
+    storageBucket: "portfolio-5e3eb.appspot.com",
+    messagingSenderId: "511561733367",
+    appId: "1:511561733367:web:6de02fa9d4201c67e02ff2"
+  };
+  
+
+firebase.initializeApp(firebaseConfig);
+const Firebase = firebase
+const firestore = firebase.firestore(); // Initialize Firestore
+const storage = firebase.storage()
+export { Firebase, firestore, storage };
+ ]
