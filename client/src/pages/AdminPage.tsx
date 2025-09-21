@@ -32,7 +32,7 @@ const campaignFormSchema = z.object({
 
 import { useToast } from '@/hooks/use-toast';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { collection, addDoc } from "firebase/firestore";
+import { collection, addDoc, doc, updateDoc, getDoc, Timestamp, getDocs } from "firebase/firestore";
 import { firestore } from '@/lib/firebase';
 import ThemeToggle from '@/components/ThemeToggle';
 
@@ -43,10 +43,272 @@ const formatDate = (date: Date | undefined | null) => {
   return 'N/A';
 };
 
+interface EditCampaignFormProps {
+  campaignId: string;
+  onCampaignUpdated: () => void;
+  onCancel: () => void;
+}
+
+function EditCampaignForm({ campaignId, onCampaignUpdated, onCancel }: EditCampaignFormProps) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const { data: campaign, isLoading: campaignLoading } = useQuery<CampaignWithDate>({
+    queryKey: ['campaign', campaignId],
+    queryFn: async () => {
+      const docRef = doc(firestore, 'campaigns', campaignId);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data() as Campaign;
+        return { ...data, id: docSnap.id, 
+          countdownEnd: data.countdownEnd ? data.countdownEnd.toDate() : new Date(), 
+          createdAt: data.createdAt ? data.createdAt.toDate() : new Date() 
+        };
+      } else {
+        throw new Error("Campaign not found");
+      }
+    },
+    enabled: !!campaignId,
+  });
+
+  const form = useForm<InsertCampaign>({
+    resolver: zodResolver(campaignFormSchema),
+    values: campaign ? {
+      sponsorName: campaign.sponsorName,
+      sponsorTagline: campaign.sponsorTagline,
+      sponsorWebsite: campaign.sponsorWebsite,
+      posterUrl: campaign.posterUrl,
+      secretCode: campaign.secretCode,
+      mysteryDescription: campaign.mysteryDescription,
+      prizeValue: campaign.prizeValue || '',
+      countdownEnd: campaign.countdownEnd,
+      isActive: campaign.isActive,
+      hasWinner: campaign.hasWinner,
+    } : undefined,
+  });
+
+  const updateCampaignMutation = useMutation({
+    mutationFn: async (updatedData: Partial<InsertCampaign>) => {
+      const campaignRef = doc(firestore, 'campaigns', campaignId);
+      await updateDoc(campaignRef, {
+        ...updatedData,
+        countdownEnd: updatedData.countdownEnd ? Timestamp.fromDate(updatedData.countdownEnd) : undefined,
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Campaign Updated!",
+        description: "The campaign has been updated successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['campaigns'] });
+      queryClient.invalidateQueries({ queryKey: ['campaign', campaignId] });
+      onCampaignUpdated();
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to update campaign: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const onSubmit = (data: InsertCampaign) => {
+    updateCampaignMutation.mutate(data);
+  };
+
+  if (campaignLoading) {
+    return (
+      <div className="max-w-2xl mx-auto text-center py-8">
+        <p className="text-muted-foreground">Loading campaign details...</p>
+      </div>
+    );
+  }
+
+  if (!campaign) {
+    return (
+      <div className="max-w-2xl mx-auto text-center py-8">
+        <p className="text-destructive">Campaign not found or an error occurred.</p>
+        <Button onClick={onCancel} className="mt-4">Back to Campaigns</Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-2xl mx-auto">
+      <div className="flex items-center gap-4 mb-6">
+        <Button variant="ghost" onClick={onCancel}>
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Manage Campaigns
+        </Button>
+        <h2 className="text-2xl font-bold">Edit Campaign: {campaign.sponsorName}</h2>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Campaign Details</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Modify the details of your existing sponsor campaign.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="sponsorName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Sponsor Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., TechFlow Pro" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="sponsorWebsite"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Website URL</FormLabel>
+                      <FormControl>
+                        <Input placeholder="https://example.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="sponsorTagline"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Sponsor Tagline</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., Revolutionizing Digital Innovation" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="posterUrl"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Poster Image URL</FormLabel>
+                    <FormControl>
+                      <Input placeholder="URL to sponsor poster image" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="secretCode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Secret Code</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., TECH2024WIN" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="prizeValue"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Prize Value</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., $200+" {...field} value={field.value || ''} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="mysteryDescription"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Mystery Prize Description</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Describe the mystery prize that winners will receive..." 
+                        className="min-h-[100px]"
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="countdownEnd"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Campaign End Date</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="datetime-local"
+                        {...field}
+                        value={field.value instanceof Date ? field.value.toISOString().slice(0, 16) : ''}
+                        onChange={(e) => field.onChange(e.target.value ? new Date(e.target.value) : undefined)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="flex gap-4 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={onCancel}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={updateCampaignMutation.isPending}
+                  className="flex-1 bg-gradient-to-r from-primary to-chart-3"
+                >
+                  {updateCampaignMutation.isPending ? 'Updating...' : 'Update Campaign'}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export default function AdminPage() {
   const [, setLocation] = useLocation();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [activeView, setActiveView] = useState<'dashboard' | 'create-campaign' | 'manage-campaigns' | 'winners' | 'analytics'>('dashboard');
+  const [activeView, setActiveView] = useState<'dashboard' | 'create-campaign' | 'manage-campaigns' | 'edit-campaign' | 'view-campaign' | 'winners' | 'analytics'>('dashboard');
+  const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -87,6 +349,18 @@ export default function AdminPage() {
   // Fetch campaigns
   const { data: campaigns = [], isLoading: campaignsLoading } = useQuery<CampaignWithDate[]>({
     queryKey: ['campaigns'],
+    queryFn: async () => {
+      const querySnapshot = await getDocs(collection(firestore, 'campaigns'));
+      return querySnapshot.docs.map(doc => {
+        const data = doc.data() as Campaign;
+        return {
+          ...data,
+          id: doc.id,
+          countdownEnd: data.countdownEnd ? data.countdownEnd.toDate() : new Date(),
+          createdAt: data.createdAt ? data.createdAt.toDate() : new Date(),
+        };
+      });
+    },
     enabled: isLoggedIn,
   });
 
@@ -557,8 +831,11 @@ export default function AdminPage() {
                           </div>
                         </div>
                         <div className="flex gap-2">
-                          <Button size="sm" variant="outline">Edit</Button>
-                          <Button size="sm" variant="outline">View</Button>
+                          <Button size="sm" variant="outline" onClick={() => {
+                            setSelectedCampaignId(campaign.id);
+                            setActiveView('edit-campaign');
+                          }}>Edit</Button>
+                          <Button size="sm" variant="outline" onClick={() => setLocation(`/campaign/${campaign.id}`)}>View</Button>
                         </div>
                       </div>
                     </CardContent>
@@ -567,6 +844,20 @@ export default function AdminPage() {
               )}
             </div>
           </div>
+        )}
+
+        {activeView === 'edit-campaign' && selectedCampaignId && (
+          <EditCampaignForm 
+            campaignId={selectedCampaignId} 
+            onCampaignUpdated={() => {
+              setActiveView('manage-campaigns');
+              setSelectedCampaignId(null);
+            }}
+            onCancel={() => {
+              setActiveView('manage-campaigns');
+              setSelectedCampaignId(null);
+            }}
+          />
         )}
 
         {(activeView === 'winners' || activeView === 'analytics') && (
