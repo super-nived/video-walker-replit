@@ -3,18 +3,41 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ExternalLink, Play, Sparkles, Clock, Settings } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
+import { collection, query, where, getDocs } from "firebase/firestore";
+import { firestore } from "@/lib/firebase";
 import { type Campaign } from '@shared/schema';
 import ThemeToggle from '@/components/ThemeToggle';
 import sponsorPoster from '@assets/generated_images/Tech_sponsor_ad_poster_de2247ee.png';
+
+interface CampaignWithDate extends Campaign {
+  countdownEnd: Date;
+  createdAt: Date;
+}
 
 export default function HomePage() {
   const [, setLocation] = useLocation();
   
   // Fetch active campaign
-  const { data: activeCampaign, isLoading } = useQuery<Campaign>({
-    queryKey: ['campaigns', 'active'], // Assuming 'active' is the document ID for the active campaign
+  const { data: activeCampaigns = [], isLoading } = useQuery<CampaignWithDate[]>({
+    queryKey: ['campaigns', 'active'],
+    queryFn: async () => {
+      const campaignsRef = collection(firestore, 'campaigns');
+      const q = query(campaignsRef, where("active", "==", true));
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map(doc => {
+        const data = doc.data() as Campaign;
+        return {
+          ...data,
+          id: doc.id,
+          countdownEnd: data.countdownEnd ? data.countdownEnd.toDate() : new Date(),
+          createdAt: data.createdAt ? data.createdAt.toDate() : new Date(),
+        };
+      });
+    },
     refetchInterval: 30000, // Refetch every 30 seconds for real-time updates
   });
+
+  const activeCampaign = activeCampaigns.length > 0 ? activeCampaigns[0] : undefined;
 
   // Fallback data for when no campaign is active
   const fallbackAd = {

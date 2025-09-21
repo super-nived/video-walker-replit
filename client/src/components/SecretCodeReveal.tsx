@@ -29,17 +29,21 @@ interface SecretCodeRevealProps {
   sponsorName: string;
   sponsorTagline: string;
   mysteryDescription?: string;
+  isRevealed: boolean;
+  isAnimating: boolean;
+  onReveal: () => void;
 }
 
-export default function SecretCodeReveal({ 
+export default function SecretCodeReveal({
   campaignId,
-  secretCode, 
-  sponsorName, 
+  secretCode,
+  sponsorName,
   sponsorTagline,
-  mysteryDescription 
+  mysteryDescription,
+  isRevealed,
+  isAnimating,
+  onReveal
 }: SecretCodeRevealProps) {
-  const [isRevealed, setIsRevealed] = useState(false);
-  const [isAnimating, setIsAnimating] = useState(false);
   const [showWinnerForm, setShowWinnerForm] = useState(false);
   const [isWinner, setIsWinner] = useState(false);
   const { toast } = useToast();
@@ -85,17 +89,6 @@ export default function SecretCodeReveal({
     submitWinnerMutation.mutate(data);
   };
 
-  const handleReveal = () => {
-    console.log('Revealing secret code:', secretCode);
-    setIsAnimating(true);
-    
-    // Simulate reveal animation
-    setTimeout(() => {
-      setIsRevealed(true);
-      setIsAnimating(false);
-    }, 1500);
-  };
-
   const handleCopyCode = async () => {
     try {
       await navigator.clipboard.writeText(secretCode);
@@ -108,12 +101,6 @@ export default function SecretCodeReveal({
       console.error('Failed to copy code:', err);
     }
   };
-
-  useEffect(() => {
-    // Auto-reveal after component mounts (simulating page load)
-    const timer = setTimeout(handleReveal, 500);
-    return () => clearTimeout(timer);
-  }, []);
 
   return (
     <div className="w-full mx-auto p-2 sm:p-3 md:p-4" data-testid="secret-code-reveal">
@@ -133,7 +120,7 @@ export default function SecretCodeReveal({
                 <div>
                   <Eye className="w-10 h-10 sm:w-12 sm:h-12 mx-auto text-muted-foreground mb-3 sm:mb-4" />
                   <Button 
-                    onClick={handleReveal}
+                    onClick={onReveal}
                     className="bg-gradient-to-r from-primary to-chart-3 px-6 sm:px-8 py-2 sm:py-3 text-sm sm:text-base min-h-[44px]"
                     data-testid="button-reveal-animation"
                   >

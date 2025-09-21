@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Switch } from '@/components/ui/switch';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { type InsertCampaign, type Campaign } from '@shared/schema';
@@ -28,6 +29,7 @@ const campaignFormSchema = z.object({
   countdownEnd: z.date(),
   isActive: z.boolean().optional(),
   hasWinner: z.boolean().optional(),
+  active: z.boolean().default(true),
 });
 
 import { useToast } from '@/hooks/use-toast';
@@ -279,6 +281,25 @@ function EditCampaignForm({ campaignId, onCampaignUpdated, onCancel }: EditCampa
                 )}
               />
 
+              <FormField
+                control={form.control}
+                name="active"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-base">Active Campaign</FormLabel>
+                      <FormMessage />
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
               <div className="flex gap-4 pt-4">
                 <Button
                   type="button"
@@ -343,6 +364,7 @@ export default function AdminPage() {
       countdownEnd: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours from now
       isActive: true,
       hasWinner: false,
+      active: true,
     },
   });
 
@@ -579,11 +601,11 @@ export default function AdminPage() {
                         </div>
                         <div className="text-right">
                           <div className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
-                            campaign.hasWinner ? 'bg-green-100 text-green-800' : 
-                            campaign.isActive ? 'bg-blue-100 text-blue-800' : 
+                            campaign.hasWinner ? 'bg-green-100 text-green-800' :
+                            campaign.active ? 'bg-blue-100 text-blue-800' :
                             'bg-gray-100 text-gray-800'
                           }`}>
-                            {campaign.hasWinner ? 'Winner Selected' : campaign.isActive ? 'Active' : 'Inactive'}
+                            {campaign.hasWinner ? 'Winner Selected' : campaign.active ? 'Active' : 'Inactive'}
                           </div>
                         </div>
                       </div>
@@ -742,6 +764,25 @@ export default function AdminPage() {
                       )}
                     />
 
+                    <FormField
+                      control={form.control}
+                      name="active"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                          <div className="space-y-0.5">
+                            <FormLabel className="text-base">Active Campaign</FormLabel>
+                            <FormMessage />
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+
                     <div className="flex gap-4 pt-4">
                       <Button
                         type="button"
@@ -803,11 +844,11 @@ export default function AdminPage() {
                           <div className="flex items-center gap-3 mb-2">
                             <h3 className="text-xl font-semibold">{campaign.sponsorName}</h3>
                             <div className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
-                              campaign.hasWinner ? 'bg-green-100 text-green-800' : 
-                              campaign.isActive ? 'bg-blue-100 text-blue-800' : 
+                              campaign.hasWinner ? 'bg-green-100 text-green-800' :
+                              campaign.active ? 'bg-blue-100 text-blue-800' :
                               'bg-gray-100 text-gray-800'
                             }`}>
-                              {campaign.hasWinner ? 'Winner Selected' : campaign.isActive ? 'Active' : 'Inactive'}
+                              {campaign.hasWinner ? 'Winner Selected' : campaign.active ? 'Active' : 'Inactive'}
                             </div>
                           </div>
                           <p className="text-muted-foreground mb-3">{campaign.sponsorTagline}</p>

@@ -1,34 +1,64 @@
 import { useLocation } from 'wouter';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
 import { type Campaign } from '@shared/schema';
 import SecretCodeReveal from '@/components/SecretCodeReveal';
 import ThemeToggle from '@/components/ThemeToggle';
+import { collection, query, where, getDocs } from "firebase/firestore";
+import { firestore } from "@/lib/firebase";
+import { useState, useEffect } from 'react';
+
+interface CampaignWithDate extends Campaign {
+  countdownEnd: Date;
+  createdAt: Date;
+}
 
 export default function SecretCodePage() {
   const [, setLocation] = useLocation();
+  const [isRevealed, setIsRevealed] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
 
   const handleBackClick = () => {
     console.log('Navigating back to home');
     setLocation('/');
   };
 
+  const handleReveal = () => {
+    setIsAnimating(true);
+    setTimeout(() => {
+      setIsRevealed(true);
+      setIsAnimating(false);
+    }, 1500); // Match the animation duration in SecretCodeReveal
+  };
+
   // Fetch active campaign
-  const { data: activeCampaign, isLoading } = useQuery<Campaign>({
-    queryKey: ['campaigns', 'active'], // Assuming 'active' is the document ID for the active campaign
+  const { data: activeCampaigns = [], isLoading } = useQuery<CampaignWithDate[]>({
+    queryKey: ['campaigns', 'active'],
+    queryFn: async () => {
+      const campaignsRef = collection(firestore, 'campaigns');
+      const q = query(campaignsRef, where("active", "==", true));
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map(doc => {
+        const data = doc.data() as Campaign;
+        return {
+          ...data,
+          id: doc.id,
+          countdownEnd: data.countdownEnd ? data.countdownEnd.toDate() : new Date(),
+          createdAt: data.createdAt ? data.createdAt.toDate() : new Date(),
+        };
+      });
+    },
     refetchInterval: 10000, // Refetch every 10 seconds for real-time updates
   });
 
-  // Fallback data for when no campaign is active
-  const fallbackData = {
-    secretCode: "TECH2024WIN",
-    sponsorName: "TechFlow Pro",
-    sponsorTagline: "Revolutionizing Digital Innovation",
-    mysteryDescription: "🎁 Mystery Prize Awaits! Be the first to tell VideoWalker this secret code and win an amazing surprise gift worth over $200!"
-  };
+  const activeCampaign = activeCampaigns.length > 0 ? activeCampaigns[0] : undefined;
 
-  const campaign = activeCampaign || fallbackData;
+  useEffect(() => {
+    if (!isLoading && activeCampaign && !isRevealed && !isAnimating) {
+      handleReveal();
+    }
+  }, [isLoading, activeCampaign, isRevealed, isAnimating, handleReveal]);
 
   return (
     <div className="h-screen w-screen bg-background overflow-hidden">
@@ -60,10 +90,12 @@ export default function SecretCodePage() {
       {/* Full Screen Main Content - Super responsive padding */}
       <main className="h-full w-full pt-16 sm:pt-20 flex items-center justify-center p-2 sm:p-4">
         <div className="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg">
-          {isLoading ? (
+          {(isLoading || isAnimating) ? (
             <div className="text-center p-8">
-              <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-              <p className="text-muted-foreground">Loading campaign...</p>
+              <Sparkles className="w-10 h-10 sm:w-12 sm:h-12 mx-auto text-primary mb-3 sm:mb-4 animate-spin" />
+              <p className="text-sm sm:text-base md:text-lg font-semibold text-muted-foreground">
+                {isLoading ? 'Loading campaign...' : 'Revealing Secret Code...'}
+              </p>
             </div>
           ) : !activeCampaign ? (
             <div className="text-center p-8">
@@ -86,10 +118,13 @@ export default function SecretCodePage() {
           ) : (
             <SecretCodeReveal
               campaignId={activeCampaign.id}
-              secretCode={campaign.secretCode}
-              sponsorName={campaign.sponsorName}
-              sponsorTagline={campaign.sponsorTagline}
-              mysteryDescription={campaign.mysteryDescription}
+              secretCode={activeCampaign.secretCode}
+              sponsorName={activeCampaign.sponsorName}
+              sponsorTagline={activeCampaign.sponsorTagline}
+              mysteryDescription={activeCampaign.mysteryDescription}
+              isRevealed={isRevealed}
+              isAnimating={isAnimating}
+              onReveal={handleReveal}
             />
           )}
         </div>
