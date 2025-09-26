@@ -30,17 +30,27 @@ const campaignFormSchema = z.object({
   prizeValue: z.string().optional(),
   countdownEnd: z.date(),
   isActive: z.boolean().optional(),
-  hasWinner: z.boolean().optional(),
   active: z.boolean().default(true),
 });
 
 import { useToast } from '@/hooks/use-toast';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { collection, addDoc, doc, updateDoc, getDoc, Timestamp, getDocs } from "firebase/firestore";
+import { collection, addDoc, doc, updateDoc, getDoc, Timestamp, getDocs, deleteDoc } from "firebase/firestore";
 import { firestore, storage } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import imageCompression from 'browser-image-compression';
 import ThemeToggle from '@/components/ThemeToggle';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 const formatDate = (date: Date | undefined | null) => {
   if (date instanceof Date) {
@@ -100,7 +110,6 @@ function EditCampaignForm({ campaignId, onCampaignUpdated, onCancel }: EditCampa
       prizeValue: campaign.prizeValue || '',
       countdownEnd: campaign.countdownEnd,
       isActive: campaign.isActive,
-      hasWinner: campaign.hasWinner,
     } : undefined,
   });
 
@@ -400,6 +409,7 @@ export default function AdminPage() {
   const [password, setPassword] = useState('');
   const [activeView, setActiveView] = useState<'dashboard' | 'create-campaign' | 'manage-campaigns' | 'edit-campaign' | 'view-campaign' | 'winners' | 'analytics'>('dashboard');
   const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -448,7 +458,6 @@ export default function AdminPage() {
       prizeValue: '',
       countdownEnd: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours from now
       isActive: true,
-      hasWinner: false,
       active: true,
     },
   });
@@ -469,7 +478,12 @@ export default function AdminPage() {
       });
     },
     enabled: !!user,
+    select: (data) => data.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()),
   });
+
+  const filteredCampaigns = campaigns.filter(campaign => 
+    campaign.sponsorName.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   // Create campaign mutation
   const createCampaignMutation = useMutation({
@@ -490,6 +504,26 @@ export default function AdminPage() {
       toast({
         title: "Error",
         description: "Failed to create campaign. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteCampaignMutation = useMutation({
+    mutationFn: async (campaignId: string) => {
+      await deleteDoc(doc(firestore, "campaigns", campaignId));
+    },
+    onSuccess: () => {
+      toast({
+        title: "Campaign Deleted",
+        description: "The campaign has been deleted successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['campaigns'] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to delete campaign: ${error.message}`,
         variant: "destructive",
       });
     },
@@ -614,7 +648,7 @@ export default function AdminPage() {
       </header>
 
       {/* Admin Dashboard Content */}
-      <main className="p-4 max-w-6xl mx-auto">
+      <main className="p-4 max-w-6xl mx-auto mb-20">
         {activeView === 'dashboard' && (
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -655,7 +689,7 @@ export default function AdminPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-chart-1 mb-1">
-                    {campaigns.filter(c => c.hasWinner).length}
+                    {campaigns.filter(c => c.winnerImageUrl).length}
                   </div>
                   <p className="text-sm text-muted-foreground">Campaigns with winners</p>
                 </CardContent>
@@ -704,7 +738,7 @@ export default function AdminPage() {
                   <p className="text-muted-foreground">No campaigns yet. Create your first campaign to get started!</p>
                 ) : (
                   <div className="space-y-3">
-                    {campaigns.slice(0, 3).map((campaign) => (
+                    {filteredCampaigns.slice(0, 3).map((campaign) => (
                       <div key={campaign.id} className="flex items-center justify-between p-3 border rounded-lg">
                         <div>
                           <h4 className="font-medium">{campaign.sponsorName}</h4>
@@ -712,11 +746,11 @@ export default function AdminPage() {
                         </div>
                         <div className="text-right">
                           <div className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
-                            campaign.hasWinner ? 'bg-green-100 text-green-800' :
+                            campaign.winnerImageUrl ? 'bg-green-100 text-green-800' :
                             campaign.active ? 'bg-blue-100 text-blue-800' :
                             'bg-gray-100 text-gray-800'
                           }`}>
-                            {campaign.hasWinner ? 'Winner Selected' : campaign.active ? 'Active' : 'Inactive'}
+                            {campaign.winnerImageUrl ? 'Winner Selected' : campaign.active ? 'Active' : 'Inactive'}
                           </div>
                         </div>
                       </div>
@@ -921,12 +955,21 @@ export default function AdminPage() {
 
         {activeView === 'manage-campaigns' && (
           <div>
-            <div className="flex items-center gap-4 mb-6">
-              <Button variant="ghost" onClick={() => setActiveView('dashboard')}>
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Dashboard
-              </Button>
-              <h2 className="text-2xl font-bold">Manage Campaigns</h2>
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
+              <div className="flex items-center gap-4">
+                <Button variant="ghost" onClick={() => setActiveView('dashboard')}>
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back
+                </Button>
+                <h2 className="text-2xl font-bold">Manage Campaigns</h2>
+              </div>
+              <div className="w-full sm:w-auto">
+                <Input 
+                  placeholder="Search by sponsor name..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
             </div>
 
             <div className="space-y-4">
@@ -936,10 +979,10 @@ export default function AdminPage() {
                     <p className="text-muted-foreground">Loading campaigns...</p>
                   </CardContent>
                 </Card>
-              ) : campaigns.length === 0 ? (
+              ) : filteredCampaigns.length === 0 ? (
                 <Card>
                   <CardContent className="p-6 text-center">
-                    <p className="text-muted-foreground mb-4">No campaigns created yet.</p>
+                    <p className="text-muted-foreground mb-4">No campaigns found.</p>
                     <Button onClick={() => setActiveView('create-campaign')}>
                       <Plus className="w-4 h-4 mr-2" />
                       Create Your First Campaign
@@ -947,7 +990,7 @@ export default function AdminPage() {
                   </CardContent>
                 </Card>
               ) : (
-                campaigns.map((campaign) => (
+                filteredCampaigns.map((campaign) => (
                   <Card key={campaign.id} className="hover-elevate">
                     <CardContent className="p-6">
                       <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
@@ -955,11 +998,11 @@ export default function AdminPage() {
                           <div className="flex items-center gap-3 mb-2">
                             <h3 className="text-xl font-semibold">{campaign.sponsorName}</h3>
                             <div className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
-                              campaign.hasWinner ? 'bg-green-100 text-green-800' :
+                              campaign.winnerImageUrl ? 'bg-green-100 text-green-800' :
                               campaign.active ? 'bg-blue-100 text-blue-800' :
                               'bg-gray-100 text-gray-800'
                             }`}>
-                              {campaign.hasWinner ? 'Winner Selected' : campaign.active ? 'Active' : 'Inactive'}
+                              {campaign.winnerImageUrl ? 'Winner Selected' : campaign.active ? 'Active' : 'Inactive'}
                             </div>
                           </div>
                           <p className="text-muted-foreground mb-3">{campaign.sponsorTagline}</p>
@@ -988,6 +1031,23 @@ export default function AdminPage() {
                             setActiveView('edit-campaign');
                           }}>Edit</Button>
                           <Button size="sm" variant="outline" onClick={() => setLocation(`/campaign/${campaign.id}`)}>View</Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button size="sm" variant="destructive">Delete</Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This action cannot be undone. This will permanently delete the campaign.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => deleteCampaignMutation.mutate(campaign.id)}>Delete</AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </div>
                       </div>
                     </CardContent>
