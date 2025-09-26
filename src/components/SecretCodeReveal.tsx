@@ -13,6 +13,8 @@ import { firestore } from '@/lib/firebase';
 import { type InsertWinner } from '@shared/schema';
 import { z } from "zod";
 import CountdownTimer from './CountdownTimer';
+import { Skeleton } from '@/components/ui/skeleton';
+import { motion } from 'framer-motion';
 
 const winnerFormSchema = z.object({
   campaignId: z.string(),
@@ -54,6 +56,7 @@ export default function SecretCodeReveal({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isCampaignOver, setIsCampaignOver] = useState(new Date() > campaignEndDate);
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -121,13 +124,26 @@ export default function SecretCodeReveal({
       <Card className="mb-4 sm:mb-6 overflow-hidden">
         <CardContent className="p-4 sm:p-6 md:p-8 text-center bg-gradient-to-br from-primary/5 to-chart-3/5">
           {winnerImageUrl ? (
-            <div className="space-y-3 sm:space-y-4 animate-fade-in">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.5 }}
+              className="space-y-3 sm:space-y-4"
+            >
               <Trophy className="w-10 h-10 sm:w-12 sm:h-12 mx-auto text-chart-1" />
               <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-chart-1 mb-2 sm:mb-3">
                 We Have a Winner!
               </h2>
-              <img src={winnerImageUrl} alt="Campaign Winner" className="w-32 h-32 rounded-full mx-auto border-4 border-chart-1 shadow-lg" />
-            </div>
+              <div className="relative w-32 h-32 mx-auto">
+                {!imageLoaded && <Skeleton className="w-full h-full rounded-lg" />}
+                <img 
+                  src={winnerImageUrl} 
+                  alt="Campaign Winner" 
+                  className={`w-full h-full rounded-lg object-cover border-4 border-chart-1 shadow-lg transition-opacity duration-500 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+                  onLoad={() => setImageLoaded(true)}
+                />
+              </div>
+            </motion.div>
           ) : !isCampaignOver ? (
             <div className="space-y-3 sm:space-y-4">
               <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-primary mb-2 sm:mb-3">

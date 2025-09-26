@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { ArrowLeft, Shield, LogIn, Plus, Calendar, Trophy, BarChart3, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { type InsertCampaign, type Campaign } from '@shared/schema';
 import { z } from "zod";
+import { auth } from '@/lib/firebase';
+import { signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'firebase/auth';
 
 interface CampaignWithDate extends Campaign {
   countdownEnd: Date;
@@ -391,26 +393,45 @@ function EditCampaignForm({ campaignId, onCampaignUpdated, onCancel }: EditCampa
 
 export default function AdminPage() {
   const [, setLocation] = useLocation();
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [activeView, setActiveView] = useState<'dashboard' | 'create-campaign' | 'manage-campaigns' | 'edit-campaign' | 'view-campaign' | 'winners' | 'analytics'>('dashboard');
   const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setUser(user);
+      setAuthLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
   const handleBackClick = () => {
-    console.log('Navigating back to home');
     setLocation('/');
   };
 
-  const handleLogin = () => {
-    console.log('Google login clicked - would use Firebase auth');
-    // todo: remove mock functionality - implement Firebase Google auth
-    setIsLoggedIn(true);
+  const handleLogin = async () => {
+    setLoginLoading(true);
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (error: any) {
+      toast({
+        title: "Login Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoginLoading(false);
+    }
   };
 
-  const handleLogout = () => {
-    console.log('Logout clicked');
-    setIsLoggedIn(false);
+  const handleLogout = async () => {
+    await signOut(auth);
     setActiveView('dashboard');
   };
 
@@ -447,7 +468,7 @@ export default function AdminPage() {
         };
       });
     },
-    enabled: isLoggedIn,
+    enabled: !!user,
   });
 
   // Create campaign mutation
@@ -478,7 +499,15 @@ export default function AdminPage() {
     createCampaignMutation.mutate(data);
   };
 
-  if (!isLoggedIn) {
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
+  if (!user) {
     return (
       <div className="min-h-screen bg-background">
         {/* Header */}
@@ -511,17 +540,35 @@ export default function AdminPage() {
               </div>
               <CardTitle>Admin Access Required</CardTitle>
               <p className="text-sm text-muted-foreground">
-                Sign in with Google to manage advertisements
+                Sign in to manage advertisements
               </p>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input id="email" type="email" placeholder="admin@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+              </div>
               <Button 
                 onClick={handleLogin}
                 className="w-full"
-                data-testid="button-google-login"
+                data-testid="button-login"
+                disabled={loginLoading}
               >
-                <LogIn className="w-4 h-4 mr-2" />
-                Sign in with Google
+                {loginLoading ? (
+                  <>
+                    <LogIn className="w-4 h-4 mr-2 animate-spin" />
+                    Logging in...
+                  </>
+                ) : (
+                  <>
+                    <LogIn className="w-4 h-4 mr-2" />
+                    Login
+                  </>
+                )}
               </Button>
               
               <p className="text-xs text-muted-foreground text-center">
