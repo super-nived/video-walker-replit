@@ -9,6 +9,7 @@ import HomePage from "@/pages/HomePage";
 import SecretCodePage from "@/pages/SecretCodePage";
 import WinnersPage from "@/pages/WinnersPage";
 import AdminPage from "@/pages/AdminPage";
+import HowToPlayPage from "@/pages/HowToPlayPage";
 import CampaignDetailsPage from "@/pages/CampaignDetailsPage";
 import Navigation from "@/components/Navigation";
 
@@ -20,6 +21,7 @@ function Router() {
         <Route path="/secret-code" component={SecretCodePage} />
         <Route path="/winners" component={WinnersPage} />
         <Route path="/admin" component={AdminPage} />
+        <Route path="/how-to-play" component={HowToPlayPage} />
         <Route path="/campaign/:id" component={CampaignDetailsPage} />
         <Route component={NotFound} />
       </Switch>

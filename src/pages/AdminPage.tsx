@@ -653,7 +653,7 @@ export default function AdminPage() {
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
-                <h2 className="text-2xl font-bold">Dashboard</h2>
+                <h2 className="text-xl sm:text-2xl font-bold">Dashboard</h2>
                 <p className="text-muted-foreground">Manage your VideoWalker campaigns</p>
               </div>
               <Button 
@@ -666,29 +666,29 @@ export default function AdminPage() {
               </Button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
               <Card className="hover-elevate cursor-pointer" onClick={() => setActiveView('manage-campaigns')}>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-lg flex items-center gap-2">
+                  <CardTitle className="text-base sm:text-lg flex items-center gap-2">
                     <Settings className="w-5 h-5 text-primary" />
                     Campaigns
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-primary mb-1">{campaigns.length}</div>
+                  <div className="text-xl sm:text-2xl font-bold text-primary mb-1">{campaigns.length}</div>
                   <p className="text-sm text-muted-foreground">Active campaigns</p>
                 </CardContent>
               </Card>
 
               <Card className="hover-elevate cursor-pointer" onClick={() => setActiveView('winners')}>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-lg flex items-center gap-2">
+                  <CardTitle className="text-base sm:text-lg flex items-center gap-2">
                     <Trophy className="w-5 h-5 text-chart-1" />
                     Winners
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-chart-1 mb-1">
+                  <div className="text-xl sm:text-2xl font-bold text-chart-1 mb-1">
                     {campaigns.filter(c => c.winnerImageUrl).length}
                   </div>
                   <p className="text-sm text-muted-foreground">Campaigns with winners</p>
@@ -697,13 +697,13 @@ export default function AdminPage() {
 
               <Card className="hover-elevate cursor-pointer" onClick={() => setActiveView('analytics')}>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-lg flex items-center gap-2">
+                  <CardTitle className="text-base sm:text-lg flex items-center gap-2">
                     <BarChart3 className="w-5 h-5 text-chart-2" />
                     Analytics
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-chart-2 mb-1">
+                  <div className="text-xl sm:text-2xl font-bold text-chart-2 mb-1">
                     {campaigns.filter(c => c.isActive).length}
                   </div>
                   <p className="text-sm text-muted-foreground">Live campaigns</p>
@@ -712,13 +712,13 @@ export default function AdminPage() {
 
               <Card className="hover-elevate">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-lg flex items-center gap-2">
+                  <CardTitle className="text-base sm:text-lg flex items-center gap-2">
                     <Calendar className="w-5 h-5 text-chart-3" />
                     Upcoming
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-chart-3 mb-1">
+                  <div className="text-xl sm:text-2xl font-bold text-chart-3 mb-1">
                     {campaigns.filter(c => new Date(c.countdownEnd) > new Date()).length}
                   </div>
                   <p className="text-sm text-muted-foreground">Active countdowns</p>
@@ -955,13 +955,13 @@ export default function AdminPage() {
 
         {activeView === 'manage-campaigns' && (
           <div>
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
-              <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-4 mb-4 sm:mb-6">
+              <div className="flex items-center gap-2 sm:gap-4">
                 <Button variant="ghost" onClick={() => setActiveView('dashboard')}>
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Back
                 </Button>
-                <h2 className="text-2xl font-bold">Manage Campaigns</h2>
+                <h2 className="text-xl sm:text-2xl font-bold">Manage Campaigns</h2>
               </div>
               <div className="w-full sm:w-auto">
                 <Input 
@@ -995,8 +995,8 @@ export default function AdminPage() {
                     <CardContent className="p-6">
                       <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                         <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <h3 className="text-xl font-semibold">{campaign.sponsorName}</h3>
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-3 mb-1 sm:mb-2">
+                            <h3 className="text-base sm:text-xl font-semibold">{campaign.sponsorName}</h3>
                             <div className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
                               campaign.winnerImageUrl ? 'bg-green-100 text-green-800' :
                               campaign.active ? 'bg-blue-100 text-blue-800' :
@@ -1005,8 +1005,8 @@ export default function AdminPage() {
                               {campaign.winnerImageUrl ? 'Winner Selected' : campaign.active ? 'Active' : 'Inactive'}
                             </div>
                           </div>
-                          <p className="text-muted-foreground mb-3">{campaign.sponsorTagline}</p>
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+                          <p className="text-xs sm:text-sm text-muted-foreground mb-2 sm:mb-3">{campaign.sponsorTagline}</p>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 text-xs sm:text-sm">
                             <div>
                               <span className="font-medium">Secret Code:</span>
                               <p className="font-mono text-primary">{campaign.secretCode}</p>

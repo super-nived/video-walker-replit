@@ -1,14 +1,14 @@
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
-import { Home, Trophy, Settings } from 'lucide-react';
+import { Home, Trophy, Settings, HelpCircle } from 'lucide-react';
 
 export default function Navigation() {
   const [location, setLocation] = useLocation();
 
   const navItems = [
     { path: '/', label: 'Home', icon: Home },
-    { path: '/winners', label: 'Winners', icon: Trophy },
-    { path: '/admin', label: 'Admin', icon: Settings }
+    { path: '/how-to-play', label: 'How to Play', icon: HelpCircle },
+    { path: '/winners', label: 'Winners', icon: Trophy }
   ];
 
   return (
