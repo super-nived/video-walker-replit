@@ -16,6 +16,7 @@ export const campaigns = pgTable("campaigns", {
   countdownEnd: timestamp("countdown_end").notNull(),
   isActive: boolean("is_active").default(true),
   hasWinner: boolean("has_winner").default(false),
+  winnerImageUrl: text("winner_image_url"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

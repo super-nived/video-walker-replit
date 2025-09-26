@@ -35,7 +35,9 @@ const campaignFormSchema = z.object({
 import { useToast } from '@/hooks/use-toast';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { collection, addDoc, doc, updateDoc, getDoc, Timestamp, getDocs } from "firebase/firestore";
-import { firestore } from '@/lib/firebase';
+import { firestore, storage } from '@/lib/firebase';
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import imageCompression from 'browser-image-compression';
 import ThemeToggle from '@/components/ThemeToggle';
 
 const formatDate = (date: Date | undefined | null) => {
@@ -63,6 +65,8 @@ interface EditCampaignFormProps {
 function EditCampaignForm({ campaignId, onCampaignUpdated, onCancel }: EditCampaignFormProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   const { data: campaign, isLoading: campaignLoading } = useQuery<CampaignWithDate>({
     queryKey: ['campaign', campaignId],
@@ -99,7 +103,7 @@ function EditCampaignForm({ campaignId, onCampaignUpdated, onCancel }: EditCampa
   });
 
   const updateCampaignMutation = useMutation({
-    mutationFn: async (updatedData: Partial<InsertCampaign>) => {
+    mutationFn: async (updatedData: Partial<InsertCampaign> & { winnerImageUrl?: string }) => {
       const campaignRef = doc(firestore, 'campaigns', campaignId);
       await updateDoc(campaignRef, {
         ...updatedData,
@@ -122,10 +126,49 @@ function EditCampaignForm({ campaignId, onCampaignUpdated, onCancel }: EditCampa
         variant: "destructive",
       });
     },
+    onSettled: () => {
+        setUploading(false);
+    }
   });
 
-  const onSubmit = (data: InsertCampaign) => {
-    updateCampaignMutation.mutate(data);
+  const handleImageUpload = async (file: File) => {
+    const options = {
+      maxSizeMB: 1,
+      maxWidthOrHeight: 1920,
+      useWebWorker: true,
+    };
+    try {
+      const compressedFile = await imageCompression(file, options);
+      const storageRef = ref(storage, `winner_images/${campaignId}/${compressedFile.name}`);
+      await uploadBytes(storageRef, compressedFile);
+      const downloadURL = await getDownloadURL(storageRef);
+      return downloadURL;
+    } catch (error) { 
+      console.error("Error compressing or uploading image: ", error);
+      toast({
+        title: "Upload Error",
+        description: "Failed to upload image. Please try again.",
+        variant: "destructive",
+      });
+      return null;
+    }
+  };
+
+  const onSubmit = async (data: InsertCampaign) => {
+    setUploading(true);
+    let updatedData: Partial<InsertCampaign> & { winnerImageUrl?: string } = { ...data };
+
+    if (selectedFile) {
+      const imageUrl = await handleImageUpload(selectedFile);
+      if (imageUrl) {
+        updatedData.winnerImageUrl = imageUrl;
+      } else {
+        setUploading(false);
+        return;
+      }
+    }
+
+    updateCampaignMutation.mutate(updatedData);
   };
 
   if (campaignLoading) {
@@ -290,6 +333,18 @@ function EditCampaignForm({ campaignId, onCampaignUpdated, onCancel }: EditCampa
                 )}
               />
 
+              <FormItem>
+                <FormLabel>Winner Image</FormLabel>
+                <FormControl>
+                  <Input 
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setSelectedFile(e.target.files ? e.target.files[0] : null)}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+
               <FormField
                 control={form.control}
                 name="active"
@@ -320,10 +375,10 @@ function EditCampaignForm({ campaignId, onCampaignUpdated, onCancel }: EditCampa
                 </Button>
                 <Button
                   type="submit"
-                  disabled={updateCampaignMutation.isPending}
+                  disabled={updateCampaignMutation.isPending || uploading}
                   className="flex-1 bg-gradient-to-r from-primary to-chart-3"
                 >
-                  {updateCampaignMutation.isPending ? 'Updating...' : 'Update Campaign'}
+                  {uploading ? 'Uploading Image...' : updateCampaignMutation.isPending ? 'Updating...' : 'Update Campaign'}
                 </Button>
               </div>
             </form>

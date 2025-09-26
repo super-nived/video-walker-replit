@@ -34,6 +34,7 @@ interface SecretCodeRevealProps {
   isAnimating: boolean;
   onReveal: () => void;
   campaignEndDate: Date;
+  winnerImageUrl?: string | null;
 }
 
 export default function SecretCodeReveal({
@@ -45,7 +46,8 @@ export default function SecretCodeReveal({
   isRevealed,
   isAnimating,
   onReveal,
-  campaignEndDate
+  campaignEndDate,
+  winnerImageUrl
 }: SecretCodeRevealProps) {
   const [showWinnerForm, setShowWinnerForm] = useState(false);
   const [isWinner, setIsWinner] = useState(false);
@@ -118,7 +120,15 @@ export default function SecretCodeReveal({
       {/* Secret Code Section - Super responsive */}
       <Card className="mb-4 sm:mb-6 overflow-hidden">
         <CardContent className="p-4 sm:p-6 md:p-8 text-center bg-gradient-to-br from-primary/5 to-chart-3/5">
-          {!isCampaignOver ? (
+          {winnerImageUrl ? (
+            <div className="space-y-3 sm:space-y-4 animate-fade-in">
+              <Trophy className="w-10 h-10 sm:w-12 sm:h-12 mx-auto text-chart-1" />
+              <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-chart-1 mb-2 sm:mb-3">
+                We Have a Winner!
+              </h2>
+              <img src={winnerImageUrl} alt="Campaign Winner" className="w-32 h-32 rounded-full mx-auto border-4 border-chart-1 shadow-lg" />
+            </div>
+          ) : !isCampaignOver ? (
             <div className="space-y-3 sm:space-y-4">
               <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-primary mb-2 sm:mb-3">
                 Secret Code Reveals In

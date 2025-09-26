@@ -126,6 +126,7 @@ export default function SecretCodePage() {
               isAnimating={isAnimating}
               onReveal={handleReveal}
               campaignEndDate={activeCampaign.countdownEnd}
+              winnerImageUrl={activeCampaign.winnerImageUrl}
             />
           )}
         </div>
