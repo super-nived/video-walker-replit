@@ -45,6 +45,15 @@ const formatDate = (date: Date | undefined | null) => {
   return 'N/A';
 };
 
+const formatDateTimeLocal = (date: Date) => {
+  const year = date.getFullYear();
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const day = date.getDate().toString().padStart(2, '0');
+  const hours = date.getHours().toString().padStart(2, '0');
+  const minutes = date.getMinutes().toString().padStart(2, '0');
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
+
 interface EditCampaignFormProps {
   campaignId: string;
   onCampaignUpdated: () => void;
@@ -272,7 +281,7 @@ function EditCampaignForm({ campaignId, onCampaignUpdated, onCancel }: EditCampa
                       <Input 
                         type="datetime-local"
                         {...field}
-                        value={field.value instanceof Date ? field.value.toISOString().slice(0, 16) : ''}
+                        value={field.value instanceof Date ? formatDateTimeLocal(field.value) : ''}
                         onChange={(e) => field.onChange(e.target.value ? new Date(e.target.value) : undefined)}
                       />
                     </FormControl>
@@ -754,7 +763,7 @@ export default function AdminPage() {
                             <Input 
                               type="datetime-local"
                               {...field}
-                              value={field.value instanceof Date ? field.value.toISOString().slice(0, 16) : ''}
+                              value={field.value instanceof Date ? formatDateTimeLocal(field.value) : ''}
                               onChange={(e) => field.onChange(e.target.value ? new Date(e.target.value) : undefined)}
                               data-testid="input-countdown-end"
                             />

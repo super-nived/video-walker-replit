@@ -12,6 +12,7 @@ import { collection, addDoc } from "firebase/firestore";
 import { firestore } from '@/lib/firebase';
 import { type InsertWinner } from '@shared/schema';
 import { z } from "zod";
+import CountdownTimer from './CountdownTimer';
 
 const winnerFormSchema = z.object({
   campaignId: z.string(),
@@ -32,6 +33,7 @@ interface SecretCodeRevealProps {
   isRevealed: boolean;
   isAnimating: boolean;
   onReveal: () => void;
+  campaignEndDate: Date;
 }
 
 export default function SecretCodeReveal({
@@ -42,12 +44,21 @@ export default function SecretCodeReveal({
   mysteryDescription,
   isRevealed,
   isAnimating,
-  onReveal
+  onReveal,
+  campaignEndDate
 }: SecretCodeRevealProps) {
   const [showWinnerForm, setShowWinnerForm] = useState(false);
   const [isWinner, setIsWinner] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [isCampaignOver, setIsCampaignOver] = useState(new Date() > campaignEndDate);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setIsCampaignOver(new Date() > campaignEndDate);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [campaignEndDate]);
 
   // Winner form setup
   const form = useForm<InsertWinner>({
@@ -107,7 +118,17 @@ export default function SecretCodeReveal({
       {/* Secret Code Section - Super responsive */}
       <Card className="mb-4 sm:mb-6 overflow-hidden">
         <CardContent className="p-4 sm:p-6 md:p-8 text-center bg-gradient-to-br from-primary/5 to-chart-3/5">
-          {!isRevealed ? (
+          {!isCampaignOver ? (
+            <div className="space-y-3 sm:space-y-4">
+              <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-primary mb-2 sm:mb-3">
+                Secret Code Reveals In
+              </h2>
+              <CountdownTimer targetDate={campaignEndDate} />
+              <p className="text-xs sm:text-sm text-muted-foreground">
+                The secret code will be revealed soon. Stay tuned!
+              </p>
+            </div>
+          ) : !isRevealed ? (
             <div className="space-y-3 sm:space-y-4">
               {isAnimating ? (
                 <div className="animate-pulse">
@@ -157,7 +178,7 @@ export default function SecretCodeReveal({
               
               <div className="space-y-3">
                 <p className="text-xs sm:text-sm text-muted-foreground">
-                  Tell this code to VideoWalker first to win!
+                  If you missed any, be the first to tell Video Walker and earn a gift!
                 </p>
                 
                 {!showWinnerForm && !isWinner && (

@@ -125,6 +125,7 @@ export default function SecretCodePage() {
               isRevealed={isRevealed}
               isAnimating={isAnimating}
               onReveal={handleReveal}
+              campaignEndDate={activeCampaign.countdownEnd}
             />
           )}
         </div>
