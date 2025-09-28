@@ -61,7 +61,7 @@ export default function SecretCodePage() {
   }, [isLoading, activeCampaign, isRevealed, isAnimating, handleReveal]);
 
   return (
-    <div className="h-screen w-screen bg-background overflow-hidden">
+    <div className="h-screen w-screen bg-background">
       {/* Floating Header - Super responsive */}
       <header className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between p-2 sm:p-4 bg-background/80 backdrop-blur-sm border-b">
         <Button 
@@ -88,8 +88,8 @@ export default function SecretCodePage() {
       </header>
 
       {/* Full Screen Main Content - Super responsive padding */}
-      <main className="h-full w-full pt-16 sm:pt-20 flex items-center justify-center p-2 sm:p-4">
-        <div className="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg">
+      <main className="h-full w-full pt-16 sm:pt-20 flex p-2 sm:p-4 overflow-y-auto pb-20">
+        <div className="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg m-auto">
           {(isLoading || isAnimating) ? (
             <div className="text-center p-8">
               <Sparkles className="w-10 h-10 sm:w-12 sm:h-12 mx-auto text-primary mb-3 sm:mb-4 animate-spin" />

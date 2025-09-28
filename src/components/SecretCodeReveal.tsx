@@ -2,19 +2,27 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Copy, Sparkles, Eye, Trophy, User } from 'lucide-react';
+import { Copy, Sparkles, Eye, Trophy } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { collection, addDoc } from "firebase/firestore";
 import { firestore } from '@/lib/firebase';
 import { type InsertWinner } from '@shared/schema';
 import { z } from "zod";
 import CountdownTimer from './CountdownTimer';
-import { Skeleton } from '@/components/ui/skeleton';
 import { motion } from 'framer-motion';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+} from "@/components/ui/dialog";
 
 const winnerFormSchema = z.object({
   campaignId: z.string(),
@@ -51,12 +59,11 @@ export default function SecretCodeReveal({
   campaignEndDate,
   winnerImageUrl
 }: SecretCodeRevealProps) {
-  const [showWinnerForm, setShowWinnerForm] = useState(false);
   const [isWinner, setIsWinner] = useState(false);
+  const [showWinnerDialog, setShowWinnerDialog] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isCampaignOver, setIsCampaignOver] = useState(new Date() > campaignEndDate);
-  const [imageLoaded, setImageLoaded] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -65,7 +72,6 @@ export default function SecretCodeReveal({
     return () => clearInterval(timer);
   }, [campaignEndDate]);
 
-  // Winner form setup
   const form = useForm<InsertWinner>({
     resolver: zodResolver(winnerFormSchema),
     defaultValues: {
@@ -77,15 +83,14 @@ export default function SecretCodeReveal({
     },
   });
 
-  // Submit winner mutation
   const submitWinnerMutation = useMutation({
     mutationFn: async (winner: InsertWinner) => {
       const docRef = await addDoc(collection(firestore, 'winners'), winner);
-      return { id: docRef.id, ...winner }; // Return the created winner with its ID
+      return { id: docRef.id, ...winner };
     },
     onSuccess: () => {
       setIsWinner(true);
-      setShowWinnerForm(false);
+      setShowWinnerDialog(false);
       toast({
         title: "🎉 Congratulations!",
         description: "You're the winner! You'll be contacted soon about your prize.",
@@ -112,7 +117,6 @@ export default function SecretCodeReveal({
         title: "Code Copied!",
         description: "Secret code copied to clipboard",
       });
-      console.log('Code copied to clipboard');
     } catch (err) {
       console.error('Failed to copy code:', err);
     }
@@ -120,30 +124,16 @@ export default function SecretCodeReveal({
 
   return (
     <div className="w-full mx-auto p-2 sm:p-3 md:p-4" data-testid="secret-code-reveal">
-      {/* Secret Code Section - Super responsive */}
       <Card className="mb-4 sm:mb-6 overflow-hidden">
         <CardContent className="p-4 sm:p-6 md:p-8 text-center bg-gradient-to-br from-primary/5 to-chart-3/5">
           {winnerImageUrl ? (
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.5 }}
-              className="space-y-3 sm:space-y-4"
-            >
+            <div className="space-y-3 sm:space-y-4 animate-fade-in">
               <Trophy className="w-10 h-10 sm:w-12 sm:h-12 mx-auto text-chart-1" />
               <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-chart-1 mb-2 sm:mb-3">
                 We Have a Winner!
               </h2>
-              <div className="relative w-32 h-32 mx-auto">
-                {!imageLoaded && <Skeleton className="w-full h-full rounded-lg" />}
-                <img 
-                  src={winnerImageUrl} 
-                  alt="Campaign Winner" 
-                  className={`w-full h-full rounded-lg object-cover border-4 border-chart-1 shadow-lg transition-opacity duration-500 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
-                  onLoad={() => setImageLoaded(true)}
-                />
-              </div>
-            </motion.div>
+              <img src={winnerImageUrl} alt="Campaign Winner" className="w-32 h-32 rounded-full mx-auto border-4 border-chart-1 shadow-lg" />
+            </div>
           ) : !isCampaignOver ? (
             <div className="space-y-3 sm:space-y-4">
               <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-primary mb-2 sm:mb-3">
@@ -166,7 +156,7 @@ export default function SecretCodeReveal({
               ) : (
                 <div>
                   <Eye className="w-10 h-10 sm:w-12 sm:h-12 mx-auto text-muted-foreground mb-3 sm:mb-4" />
-                  <Button 
+                  <Button
                     onClick={onReveal}
                     className="bg-gradient-to-r from-primary to-chart-3 px-6 sm:px-8 py-2 sm:py-3 text-sm sm:text-base min-h-[44px]"
                     data-testid="button-reveal-animation"
@@ -178,9 +168,8 @@ export default function SecretCodeReveal({
               )}
             </div>
           ) : (
-            <div className="space-y-3 sm:space-y-4 animate-fade-in">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="space-y-3 sm:space-y-4">
               <Sparkles className="w-10 h-10 sm:w-12 sm:h-12 mx-auto text-primary" />
-              
               <div>
                 <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-primary mb-2 sm:mb-3">
                   Secret Code
@@ -191,8 +180,7 @@ export default function SecretCodeReveal({
                   </code>
                 </div>
               </div>
-              
-              <Button 
+              <Button
                 onClick={handleCopyCode}
                 variant="outline"
                 className="w-full min-h-[44px] text-sm sm:text-base"
@@ -201,29 +189,94 @@ export default function SecretCodeReveal({
                 <Copy className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
                 Copy Code
               </Button>
-              
               <div className="space-y-3">
                 <p className="text-xs sm:text-sm text-muted-foreground">
                   If you missed any, be the first to tell Video Walker and earn a gift!
                 </p>
-                
-                {!showWinnerForm && !isWinner && (
-                  <Button 
-                    onClick={() => setShowWinnerForm(true)}
-                    className="w-full bg-gradient-to-r from-chart-1 to-chart-2 min-h-[44px]"
-                    data-testid="button-claim-prize"
-                  >
-                    <Trophy className="w-4 h-4 mr-2" />
-                    I Said the Code First - Claim Prize!
-                  </Button>
+                {!isWinner && (
+                  <Dialog open={showWinnerDialog} onOpenChange={setShowWinnerDialog}>
+                    <DialogTrigger asChild>
+                      <Button
+                        className="w-full bg-gradient-to-r from-chart-1 to-chart-2 min-h-[44px]"
+                        data-testid="button-claim-prize"
+                      >
+                        <Trophy className="w-4 h-4 mr-2" />
+                        I Said the Code First - Claim Prize!
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[425px]">
+                      <DialogHeader>
+                        <DialogTitle>Claim Your Prize!</DialogTitle>
+                        <DialogDescription>
+                          Fill in your details to claim your prize.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <Form {...form}>
+                        <form onSubmit={form.handleSubmit(onSubmitWinner)} className="space-y-4">
+                          <FormField
+                            control={form.control}
+                            name="winnerName"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Full Name *</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="Enter your full name" {...field} data-testid="input-winner-name" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="winnerEmail"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Email (optional)</FormLabel>
+                                <FormControl>
+                                  <Input type="email" placeholder="your.email@example.com" {...field} value={field.value || ''} data-testid="input-winner-email" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="winnerPhone"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Phone (G-pay or any other)</FormLabel>
+                                <FormControl>
+                                  <Input type="tel" placeholder="+1234567890" {...field} value={field.value || ''} data-testid="input-winner-phone" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <DialogFooter>
+                            <DialogClose asChild>
+                              <Button type="button" variant="outline">
+                                Cancel
+                              </Button>
+                            </DialogClose>
+                            <Button
+                              type="submit"
+                              disabled={submitWinnerMutation.isPending}
+                              className="bg-gradient-to-r from-chart-1 to-chart-2"
+                              data-testid="button-submit-winner"
+                            >
+                              {submitWinnerMutation.isPending ? 'Submitting...' : 'Claim Prize'}
+                            </Button>
+                          </DialogFooter>
+                        </form>
+                      </Form>
+                    </DialogContent>
+                  </Dialog>
                 )}
               </div>
-            </div>
+            </motion.div>
           )}
         </CardContent>
       </Card>
-      
-      {/* Sponsor Info - Responsive */}
       <Card className="mb-4">
         <CardContent className="p-3 sm:p-4 text-center">
           <h3 className="font-semibold text-sm sm:text-base md:text-lg mb-1" data-testid="text-sponsor-info-name">
@@ -234,88 +287,6 @@ export default function SecretCodeReveal({
           </p>
         </CardContent>
       </Card>
-
-      {/* Winner Form - Responsive */}
-      {showWinnerForm && !isWinner && (
-        <Card className="mb-4">
-          <CardContent className="p-4 sm:p-6">
-            <div className="text-center mb-4">
-              <Trophy className="w-8 h-8 mx-auto text-chart-1 mb-2" />
-              <h3 className="font-bold text-lg text-chart-1">Claim Your Prize!</h3>
-              <p className="text-sm text-muted-foreground">
-                Fill in your details to claim your prize
-              </p>
-            </div>
-            
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmitWinner)} className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="winnerName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Full Name *</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter your full name" {...field} data-testid="input-winner-name" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="winnerEmail"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email (optional)</FormLabel>
-                      <FormControl>
-                        <Input type="email" placeholder="your.email@example.com" {...field} value={field.value || ''} data-testid="input-winner-email" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="winnerPhone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Phone (optional)</FormLabel>
-                      <FormControl>
-                        <Input type="tel" placeholder="+1234567890" {...field} value={field.value || ''} data-testid="input-winner-phone" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="flex gap-3 pt-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setShowWinnerForm(false)}
-                    className="flex-1"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={submitWinnerMutation.isPending}
-                    className="flex-1 bg-gradient-to-r from-chart-1 to-chart-2"
-                    data-testid="button-submit-winner"
-                  >
-                    {submitWinnerMutation.isPending ? 'Submitting...' : 'Claim Prize'}
-                  </Button>
-                </div>
-              </form>
-            </Form>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Winner Success Message */}
       {isWinner && (
         <Card className="mb-4 border-green-200 bg-green-50">
           <CardContent className="p-4 sm:p-6 text-center">
@@ -334,8 +305,6 @@ export default function SecretCodeReveal({
           </CardContent>
         </Card>
       )}
-
-      {/* Mystery Description - Responsive */}
       {mysteryDescription && !isWinner && (
         <Card>
           <CardContent className="p-3 sm:p-4 text-center">
