@@ -121,6 +121,8 @@ export default function SecretCodePage() {
               secretCode={activeCampaign.secretCode}
               sponsorName={activeCampaign.sponsorName}
               sponsorTagline={activeCampaign.sponsorTagline}
+              posterUrl={activeCampaign.posterUrl}
+              sponsorWebsite={activeCampaign.sponsorWebsite}
               mysteryDescription={activeCampaign.mysteryDescription}
               isRevealed={isRevealed}
               isAnimating={isAnimating}

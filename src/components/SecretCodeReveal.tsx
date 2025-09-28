@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Copy, Sparkles, Eye, Trophy } from 'lucide-react';
+import { Copy, Sparkles, Eye, Trophy, Link } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { collection, addDoc } from "firebase/firestore";
 import { firestore } from '@/lib/firebase';
@@ -39,6 +39,8 @@ interface SecretCodeRevealProps {
   secretCode: string;
   sponsorName: string;
   sponsorTagline: string;
+  posterUrl?: string;
+  sponsorWebsite?: string;
   mysteryDescription?: string;
   isRevealed: boolean;
   isAnimating: boolean;
@@ -52,6 +54,8 @@ export default function SecretCodeReveal({
   secretCode,
   sponsorName,
   sponsorTagline,
+  posterUrl,
+  sponsorWebsite,
   mysteryDescription,
   isRevealed,
   isAnimating,
@@ -277,16 +281,25 @@ export default function SecretCodeReveal({
           )}
         </CardContent>
       </Card>
-      <Card className="mb-4">
-        <CardContent className="p-3 sm:p-4 text-center">
-          <h3 className="font-semibold text-sm sm:text-base md:text-lg mb-1" data-testid="text-sponsor-info-name">
-            {sponsorName}
-          </h3>
-          <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2" data-testid="text-sponsor-info-tagline">
-            {sponsorTagline}
-          </p>
-        </CardContent>
+
+      <Card className="mb-4 overflow-hidden">
+        <div className="flex items-center">
+          <div className="w-1/2">
+            <img src={posterUrl || './attached_assets/generated_images/Tech_sponsor_ad_poster_de2247ee.png'} alt={sponsorName} className="w-full h-full object-cover" />
+          </div>
+          <div className="w-1/2 p-4">
+            <h3 className="font-bold text-lg">{sponsorName}</h3>
+            <p className="text-sm text-muted-foreground mb-2">{sponsorTagline}</p>
+            {sponsorWebsite && (
+              <a href={sponsorWebsite} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline flex items-center gap-1">
+                <Link className="w-4 h-4" />
+                Visit Sponsor
+              </a>
+            )}
+          </div>
+        </div>
       </Card>
+
       {isWinner && (
         <Card className="mb-4 border-green-200 bg-green-50">
           <CardContent className="p-4 sm:p-6 text-center">
@@ -302,19 +315,6 @@ export default function SecretCodeReveal({
                 Keep an eye on your email and phone for updates from the VideoWalker team!
               </p>
             </div>
-          </CardContent>
-        </Card>
-      )}
-      {mysteryDescription && !isWinner && (
-        <Card>
-          <CardContent className="p-3 sm:p-4 text-center">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 mx-auto bg-gradient-to-br from-chart-1 to-chart-2 rounded-full flex items-center justify-center mb-2 sm:mb-3">
-              <span className="text-lg sm:text-xl">🎁</span>
-            </div>
-            <h4 className="font-semibold text-sm sm:text-base text-chart-1 mb-2">Your Prize</h4>
-            <p className="text-xs sm:text-sm text-muted-foreground line-clamp-3">
-              {mysteryDescription}
-            </p>
           </CardContent>
         </Card>
       )}
