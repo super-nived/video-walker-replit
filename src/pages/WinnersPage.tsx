@@ -22,9 +22,27 @@ export default function WinnersPage() {
     queryKey: ['winners'],
     queryFn: async () => {
       const campaignsRef = collection(firestore, 'campaigns');
-      const q = query(campaignsRef, where("winnerImageUrl", "!=", null));
-      const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Campaign));
+      const q1 = query(campaignsRef, where("winnerImageUrl", "!=", null));
+      const q2 = query(campaignsRef, where("hasWinner", "==", true));
+
+      const [querySnapshot1, querySnapshot2] = await Promise.all([
+        getDocs(q1),
+        getDocs(q2),
+      ]);
+
+      const winnersMap = new Map<string, Campaign>();
+
+      querySnapshot1.docs.forEach(doc => {
+        const campaign = { ...doc.data(), id: doc.id } as Campaign;
+        winnersMap.set(campaign.id, campaign);
+      });
+
+      querySnapshot2.docs.forEach(doc => {
+        const campaign = { ...doc.data(), id: doc.id } as Campaign;
+        winnersMap.set(campaign.id, campaign);
+      });
+
+      return Array.from(winnersMap.values());
     },
   });
 

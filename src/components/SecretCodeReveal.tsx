@@ -7,7 +7,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Copy, Sparkles, Eye, Trophy, Link } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { collection, addDoc } from "firebase/firestore";
+import { collection, addDoc, doc, updateDoc, runTransaction } from "firebase/firestore";
 import { firestore } from '@/lib/firebase';
 import { type InsertWinner } from '@shared/schema';
 import { z } from "zod";
@@ -42,11 +42,15 @@ interface SecretCodeRevealProps {
   posterUrl?: string;
   sponsorWebsite?: string;
   mysteryDescription?: string;
+  prizeValue?: string;
   isRevealed: boolean;
   isAnimating: boolean;
   onReveal: () => void;
   campaignEndDate: Date;
   winnerImageUrl?: string | null;
+  campaignWinnerName?: string | null;
+  campaignWinnerEmail?: string | null;
+  campaignWinnerPhone?: string | null;
 }
 
 export default function SecretCodeReveal({
@@ -57,11 +61,16 @@ export default function SecretCodeReveal({
   posterUrl,
   sponsorWebsite,
   mysteryDescription,
+  prizeValue,
   isRevealed,
   isAnimating,
   onReveal,
   campaignEndDate,
-  winnerImageUrl
+  winnerImageUrl,
+  campaignWinnerName,
+  campaignWinnerEmail,
+  campaignWinnerPhone,
+  hasWinner
 }: SecretCodeRevealProps) {
   const [isWinner, setIsWinner] = useState(false);
   const [showWinnerDialog, setShowWinnerDialog] = useState(false);
@@ -89,24 +98,56 @@ export default function SecretCodeReveal({
 
   const submitWinnerMutation = useMutation({
     mutationFn: async (winner: InsertWinner) => {
-      const docRef = await addDoc(collection(firestore, 'winners'), winner);
-      return { id: docRef.id, ...winner };
+      return await runTransaction(firestore, async (transaction) => {
+        const campaignRef = doc(firestore, 'campaigns', winner.campaignId);
+        const campaignDoc = await transaction.get(campaignRef);
+
+        if (!campaignDoc.exists()) {
+          throw new Error("Campaign not found!");
+        }
+
+        if (campaignDoc.data().hasWinner) {
+          throw new Error("A winner has already been selected.");
+        }
+
+        const winnerRef = doc(collection(firestore, "winners"));
+        transaction.set(winnerRef, winner);
+
+        transaction.update(campaignRef, {
+          hasWinner: true,
+          winnerName: winner.winnerName,
+          winnerPhone: winner.winnerPhone,
+          winnerEmail: winner.winnerEmail,
+        });
+
+        return { id: winnerRef.id, ...winner };
+      });
     },
     onSuccess: () => {
       setIsWinner(true);
       setShowWinnerDialog(false);
       toast({
         title: "🎉 Congratulations!",
-        description: "You're the winner! You'll be contacted soon about your prize.",
+        description: `You're the winner! You have won ${prizeValue || 'a prize'}. You'll be contacted soon about your prize.`,
       });
       queryClient.invalidateQueries({ queryKey: ['campaigns', 'active'] });
     },
     onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to submit winner information. Please try again.",
-        variant: "destructive",
-      });
+      if (error.message === "A winner has already been selected.") {
+        toast({
+          title: "Sorry, bad luck!",
+          description: "A winner has already been selected for this campaign.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to submit winner information. Please try again.",
+          variant: "destructive",
+        });
+      }
+      setShowWinnerDialog(false);
+      queryClient.invalidateQueries({ queryKey: ['campaigns', 'active'] });
     },
   });
 
@@ -137,6 +178,26 @@ export default function SecretCodeReveal({
                 We Have a Winner!
               </h2>
               <img src={winnerImageUrl} alt="Campaign Winner" className="w-32 h-32 rounded-full mx-auto border-4 border-chart-1 shadow-lg" />
+            </div>
+          ) : hasWinner && !winnerImageUrl ? (
+            <div className="space-y-3 sm:space-y-4 animate-fade-in">
+              <Trophy className="w-10 h-10 sm:w-12 sm:h-12 mx-auto text-chart-1" />
+              <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-chart-1 mb-2 sm:mb-3">
+                A Winner Has Been Selected!
+              </h2>
+              {campaignWinnerName && (
+                <p className="text-sm sm:text-base md:text-lg text-muted-foreground">
+                  Winner: {campaignWinnerName}
+                </p>
+              )}
+              {campaignWinnerEmail && (
+                <p className="text-sm sm:text-base md:text-lg text-muted-foreground">
+                  Email: {campaignWinnerEmail}
+                </p>
+              )}
+              <p className="text-sm sm:text-base md:text-lg text-muted-foreground">
+                This campaign already has a winner. Better luck next time!
+              </p>
             </div>
           ) : !isCampaignOver ? (
             <div className="space-y-3 sm:space-y-4">
@@ -208,7 +269,7 @@ export default function SecretCodeReveal({
                         I Said the Code First - Claim Prize!
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="sm:max-w-[425px]">
+                    <DialogContent className="sm:max-w-[425px] w-[calc(100%-2rem)]">
                       <DialogHeader>
                         <DialogTitle>Claim Your Prize!</DialogTitle>
                         <DialogDescription>
@@ -256,7 +317,7 @@ export default function SecretCodeReveal({
                               </FormItem>
                             )}
                           />
-                          <DialogFooter>
+                          <DialogFooter className="gap-2">
                             <DialogClose asChild>
                               <Button type="button" variant="outline">
                                 Cancel

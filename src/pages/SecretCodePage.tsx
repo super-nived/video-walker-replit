@@ -106,15 +106,6 @@ export default function SecretCodePage() {
                 Back to Home
               </Button>
             </div>
-          ) : activeCampaign.hasWinner ? (
-            <div className="text-center p-8">
-              <h2 className="text-xl font-bold text-green-600 mb-4">🎉 Winner Already Selected!</h2>
-              <p className="text-muted-foreground mb-6">This campaign already has a winner. Stay tuned for the next campaign!</p>
-              <Button onClick={handleBackClick}>
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Home
-              </Button>
-            </div>
           ) : (
             <SecretCodeReveal
               campaignId={activeCampaign.id}
@@ -124,11 +115,16 @@ export default function SecretCodePage() {
               posterUrl={activeCampaign.posterUrl}
               sponsorWebsite={activeCampaign.sponsorWebsite}
               mysteryDescription={activeCampaign.mysteryDescription}
+              prizeValue={activeCampaign.prizeValue}
               isRevealed={isRevealed}
               isAnimating={isAnimating}
               onReveal={handleReveal}
               campaignEndDate={activeCampaign.countdownEnd}
               winnerImageUrl={activeCampaign.winnerImageUrl}
+              campaignWinnerName={activeCampaign.winnerName}
+              campaignWinnerEmail={activeCampaign.winnerEmail}
+              campaignWinnerPhone={activeCampaign.winnerPhone}
+              hasWinner={activeCampaign.hasWinner}
             />
           )}
         </div>

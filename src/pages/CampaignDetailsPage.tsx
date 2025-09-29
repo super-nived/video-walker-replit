@@ -84,7 +84,7 @@ export default function CampaignDetailsPage() {
         <ThemeToggle />
       </header>
 
-      <main className="p-4 max-w-4xl mx-auto">
+      <main className="p-4 max-w-4xl mx-auto pb-20">
         <Card className="mt-6">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
@@ -140,6 +140,40 @@ export default function CampaignDetailsPage() {
                 <p>{new Date(campaign.createdAt).toLocaleString()}</p>
               </div>
             </div>
+
+            {campaign.hasWinner && (
+              <div className="mt-6 pt-6 border-t">
+                <h3 className="text-lg font-semibold mb-4">Winner Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {campaign.winnerName && (
+                    <div>
+                      <h4 className="font-semibold">Winner Name:</h4>
+                      <p>{campaign.winnerName}</p>
+                    </div>
+                  )}
+                  {campaign.winnerEmail && (
+                    <div>
+                      <h4 className="font-semibold">Winner Email:</h4>
+                      <p>{campaign.winnerEmail}</p>
+                    </div>
+                  )}
+                  {campaign.winnerPhone && (
+                    <div>
+                      <h4 className="font-semibold">Winner Phone:</h4>
+                      <p>{campaign.winnerPhone}</p>
+                    </div>
+                  )}
+                  {campaign.winnerImageUrl && (
+                    <div>
+                      <h4 className="font-semibold">Winner Image:</h4>
+                      <a href={campaign.winnerImageUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex items-center gap-1">
+                        View Image <ExternalLink className="w-4 h-4" />
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             <div className="flex justify-end mt-6">
               <Button onClick={() => setLocation(`/admin?edit=${campaign.id}`)}>Edit Campaign</Button>

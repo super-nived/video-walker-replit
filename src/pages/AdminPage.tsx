@@ -31,6 +31,10 @@ const campaignFormSchema = z.object({
   countdownEnd: z.date(),
   isActive: z.boolean().optional(),
   active: z.boolean().default(true),
+  hasWinner: z.boolean().optional(),
+  winnerName: z.string().optional().nullable(),
+  winnerPhone: z.string().optional().nullable(),
+  winnerEmail: z.string().email("Invalid email address").or(z.literal('')).optional().nullable(),
 });
 
 import { useToast } from '@/hooks/use-toast';
@@ -110,6 +114,10 @@ function EditCampaignForm({ campaignId, onCampaignUpdated, onCancel }: EditCampa
       prizeValue: campaign.prizeValue || '',
       countdownEnd: campaign.countdownEnd,
       isActive: campaign.isActive,
+      hasWinner: campaign.hasWinner,
+      winnerName: campaign.winnerName || '',
+      winnerPhone: campaign.winnerPhone || '',
+      winnerEmail: campaign.winnerEmail || '',
     } : undefined,
   });
 
@@ -375,6 +383,72 @@ function EditCampaignForm({ campaignId, onCampaignUpdated, onCancel }: EditCampa
                 )}
               />
 
+              <FormField
+                control={form.control}
+                name="hasWinner"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-base">Has Winner</FormLabel>
+                      <FormMessage />
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              {/* Winner Details */}
+              <h3 className="text-lg font-semibold mt-8 mb-4">Winner Details (Optional)</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                These fields are automatically populated when a winner claims a prize. You can edit them if needed.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="winnerName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Winner Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Winner's Full Name" {...field} value={field.value || ''} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="winnerEmail"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Winner Email</FormLabel>
+                      <FormControl>
+                        <Input type="email" placeholder="winner@example.com" {...field} value={field.value || ''} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <FormField
+                control={form.control}
+                name="winnerPhone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Winner Phone</FormLabel>
+                    <FormControl>
+                      <Input type="tel" placeholder="+1234567890" {...field} value={field.value || ''} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               <div className="flex gap-4 pt-4">
                 <Button
                   type="button"
@@ -459,6 +533,7 @@ export default function AdminPage() {
       countdownEnd: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours from now
       isActive: true,
       active: true,
+      hasWinner: false,
     },
   });
 
@@ -648,7 +723,7 @@ export default function AdminPage() {
       </header>
 
       {/* Admin Dashboard Content */}
-      <main className="p-4 max-w-6xl mx-auto mb-20">
+      <main className="p-4 max-w-6xl mx-auto pb-20">
         {activeView === 'dashboard' && (
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -744,13 +819,16 @@ export default function AdminPage() {
                           <h4 className="font-medium">{campaign.sponsorName}</h4>
                           <p className="text-sm text-muted-foreground">{campaign.sponsorTagline}</p>
                         </div>
-                        <div className="text-right">
+                        <div className="text-right flex items-center gap-2">
+                          {(campaign.winnerImageUrl || campaign.hasWinner) && (
+                            <div className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800">
+                              Winner Selected
+                            </div>
+                          )}
                           <div className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
-                            campaign.winnerImageUrl ? 'bg-green-100 text-green-800' :
-                            campaign.active ? 'bg-blue-100 text-blue-800' :
-                            'bg-gray-100 text-gray-800'
+                            campaign.active ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
                           }`}>
-                            {campaign.winnerImageUrl ? 'Winner Selected' : campaign.active ? 'Active' : 'Inactive'}
+                            {campaign.active ? 'Active' : 'Inactive'}
                           </div>
                         </div>
                       </div>
@@ -997,12 +1075,17 @@ export default function AdminPage() {
                         <div className="flex-1">
                           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-3 mb-1 sm:mb-2">
                             <h3 className="text-base sm:text-xl font-semibold">{campaign.sponsorName}</h3>
-                            <div className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
-                              campaign.winnerImageUrl ? 'bg-green-100 text-green-800' :
-                              campaign.active ? 'bg-blue-100 text-blue-800' :
-                              'bg-gray-100 text-gray-800'
-                            }`}>
-                              {campaign.winnerImageUrl ? 'Winner Selected' : campaign.active ? 'Active' : 'Inactive'}
+                            <div className="flex items-center gap-2">
+                              {(campaign.winnerImageUrl || campaign.hasWinner) && (
+                                <div className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800">
+                                  Winner Selected
+                                </div>
+                              )}
+                              <div className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
+                                campaign.active ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+                              }`}>
+                                {campaign.active ? 'Active' : 'Inactive'}
+                              </div>
                             </div>
                           </div>
                           <p className="text-xs sm:text-sm text-muted-foreground mb-2 sm:mb-3">{campaign.sponsorTagline}</p>

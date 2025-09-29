@@ -93,7 +93,7 @@ export default function HomePage() {
       </header>
 
       {/* Full Screen Layout with scrolling */}
-      <main className="h-full w-full flex flex-col pt-[60px] sm:pt-[72px] mb-[10rem]">
+      <main className="h-full w-full flex flex-col pt-[60px] sm:pt-[72px] pb-20">
         {/* Top 70% - Sponsor Poster - Responsive adjustments */}
         <section 
           className="h-[70svh] w-full relative cursor-pointer group overflow-hidden"
@@ -208,14 +208,11 @@ export default function HomePage() {
 
               <Button 
                 onClick={handleFindSecretCode}
-                disabled={!activeCampaign || (activeCampaign && !!activeCampaign.hasWinner)}
                 className="w-full bg-gradient-to-r from-primary to-chart-3 hover:from-primary/90 hover:to-chart-3/90 text-white font-semibold py-2 sm:py-3 text-sm sm:text-base min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
                 data-testid="button-find-secret-code"
               >
                 <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                {!activeCampaign ? 'No Active Campaign' :
-                 activeCampaign.hasWinner ? 'Winner Already Selected' :
-                 'Find Secret Code'}
+                {!activeCampaign ? 'No Active Campaign' : 'Find Secret Code'}
               </Button>
             </CardContent>
           </Card>

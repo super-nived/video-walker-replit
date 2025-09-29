@@ -17,6 +17,9 @@ export const campaigns = pgTable("campaigns", {
   isActive: boolean("is_active").default(true),
   hasWinner: boolean("has_winner").default(false),
   winnerImageUrl: text("winner_image_url"),
+  winnerName: text("winner_name"),
+  winnerPhone: text("winner_phone"),
+  winnerEmail: text("winner_email"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
