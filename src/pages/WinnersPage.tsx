@@ -91,12 +91,13 @@ export default function WinnersPage() {
               winners.map((winner) => (
                 <WinnerCard
                   key={winner.id}
-                  winnerName={winner.sponsorName} // Using sponsorName as a placeholder for winnerName
-                  winnerImageUrl={winner.winnerImageUrl || winnerImage}
+                  winnerName={winner.winnerName || 'Anonymous Winner'}
+                  winnerImageUrl={winner.winnerImageUrl}
                   sponsorName={winner.sponsorName}
-                  giftTitle={winner.mysteryDescription}
-                  giftDescription={winner.mysteryDescription}
+                  
                   sponsorWebsite={winner.sponsorWebsite}
+                  mainImageUrl={winner.posterUrl}
+                  prizeValue={winner.prizeValue}
                 />
               ))
             )}

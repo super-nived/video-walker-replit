@@ -6,61 +6,68 @@ interface WinnerCardProps {
   winnerName: string;
   winnerImageUrl: string;
   sponsorName: string;
-  giftTitle: string;
-  giftDescription: string;
   sponsorWebsite: string;
+  mainImageUrl: string;
+  prizeValue: string;
 }
 
 export default function WinnerCard({
   winnerName,
   winnerImageUrl,
   sponsorName,
-  giftTitle,
-  giftDescription,
-  sponsorWebsite
+  sponsorWebsite,
+  mainImageUrl,
+  prizeValue,
 }: WinnerCardProps) {
   const handleSponsorClick = () => {
-    console.log('Sponsor website clicked:', sponsorWebsite);
     window.open(sponsorWebsite, '_blank');
   };
 
   return (
     <Card className="overflow-hidden hover-elevate" data-testid="winner-card">
       <CardContent className="p-0">
-        {/* Winner Image */}
-        <div className="relative aspect-[3/4] w-full">
+        <div className="relative aspect-square w-full">
           <img 
-            src={winnerImageUrl} 
-            alt={`Winner: ${winnerName}`}
+            src={mainImageUrl} 
+            alt={`Sponsor: ${sponsorName}`}
             className="w-full h-full object-cover"
-            data-testid="img-winner-main"
+            data-testid="img-sponsor-main"
           />
           
-          {/* Winner Badge Overlay */}
+          <div className="absolute top-4 right-4 w-16 h-16 rounded-full border-4 border-white overflow-hidden bg-gray-200 flex items-center justify-center">
+            {winnerImageUrl ? (
+              <img 
+                src={winnerImageUrl} 
+                alt={`Winner: ${winnerName}`}
+                className="w-full h-full object-cover"
+                data-testid="img-winner-avatar"
+              />
+            ) : (
+              <Trophy className="w-8 h-8 text-gray-500" />
+            )}
+          </div>
+
           <div className="absolute top-4 left-4 bg-chart-1 text-white px-3 py-1 rounded-full flex items-center gap-2 font-semibold text-sm">
             <Trophy className="w-4 h-4" />
             <span>Winner</span>
           </div>
         </div>
         
-        {/* Card Info */}
         <div className="p-4 space-y-3">
           <div>
             <h3 className="font-bold text-lg mb-1" data-testid="text-winner-card-name">
               {winnerName}
             </h3>
-            <p className="text-sm text-muted-foreground">
-              Won: <span className="font-semibold text-foreground" data-testid="text-gift-won">
-                {giftTitle}
-              </span>
-            </p>
+            {prizeValue && (
+              <p className="text-sm text-muted-foreground">
+                Won: <span className="font-semibold text-foreground" data-testid="text-gift-won">
+                  {prizeValue}
+                </span>
+              </p>
+            )}
           </div>
           
           <div className="space-y-2">
-            <p className="text-sm text-muted-foreground" data-testid="text-gift-desc-winner">
-              {giftDescription}
-            </p>
-            
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium text-muted-foreground">
                 Sponsored by: <span className="text-foreground" data-testid="text-sponsor-winner">
