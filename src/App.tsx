@@ -11,14 +11,16 @@ import WinnersPage from "@/pages/WinnersPage";
 import AdminPage from "@/pages/AdminPage";
 import HowToPlayPage from "@/pages/HowToPlayPage";
 import CampaignDetailsPage from "@/pages/CampaignDetailsPage";
+import VisionPage from "@/pages/VisionPage";
 import Navigation from "@/components/Navigation";
 
 function Router() {
   return (
-    <>
+    <div className="pb-20 lg:pb-0">
       <Switch>
         <Route path="/" component={HomePage} />
         <Route path="/secret-code" component={SecretCodePage} />
+        <Route path="/vision" component={VisionPage} />
         <Route path="/winners" component={WinnersPage} />
         <Route path="/admin" component={AdminPage} />
         <Route path="/how-to-play" component={HowToPlayPage} />
@@ -26,7 +28,7 @@ function Router() {
         <Route component={NotFound} />
       </Switch>
       <Navigation />
-    </>
+    </div>
   );
 }
 
